@@ -15,15 +15,15 @@ pub struct Status {
     pub created_at: DateTime<UTC>,
     pub reblogs_count: u64,
     pub favourites_count: u64,
-    pub reblogged: bool,
-    pub favourited: bool,
-    pub sensitive: bool,
+    pub reblogged: Option<bool>,
+    pub favourited: Option<bool>,
+    pub sensitive: Option<bool>,
     pub spoiler_text: String,
     pub visibility: Visibility,
     pub media_attachments: Vec<Attachment>,
     pub mentions: Vec<Mention>,
     pub tags: Vec<Tag>,
-    pub application: Application,
+    pub application: Option<Application>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
