@@ -13,8 +13,12 @@ pub struct Notification {
 
 #[derive(Debug, Clone, Deserialize)]
 pub enum NotificationType {
+    #[serde(rename = "mention")]
     Mention,
+    #[serde(rename = "reblog")]
     Reblog,
+    #[serde(rename = "favourite")]
     Favourite,
+    #[serde(rename = "follow")]
     Follow,
 }
