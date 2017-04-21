@@ -1,4 +1,4 @@
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Relationship {
     pub following: bool,
     pub followed_by: bool,

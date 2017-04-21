@@ -1,4 +1,4 @@
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Card {
     pub url: String,
     pub title: String,

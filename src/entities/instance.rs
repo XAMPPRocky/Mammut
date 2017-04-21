@@ -1,4 +1,4 @@
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Instance {
     pub uri: String,
     pub title: String,

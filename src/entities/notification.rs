@@ -2,7 +2,7 @@ use chrono::prelude::*;
 use super::account::Account;
 use super::status::Status;
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Notification {
     pub id: u64,
     pub notification_type: NotificationType,
@@ -11,7 +11,7 @@ pub struct Notification {
     pub status: Option<Status>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub enum NotificationType {
     Mention,
     Reblog,

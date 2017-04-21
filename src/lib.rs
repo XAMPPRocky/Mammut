@@ -2,6 +2,35 @@
 //!
 //! Most of the api is documented on [Mastodon's
 //! github](https://github.com/tootsuite/mastodon/blob/master/docs/Using-the-API/API.md#tag)
+//!
+//! ```no_run
+//! # extern crate mammut;
+//! # fn main() {
+//! #    try().unwrap();
+//! # }
+//! # fn try() -> mammut::Result<()> {
+//! use mammut::Registration;
+//! use mammut::apps::{AppBuilder, Scope};
+//!
+//! let app = AppBuilder {
+//!     client_name: "mammut_test",
+//!     redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
+//!     scopes: Scope::Read,
+//!     website: None,
+//! };
+//!
+//! let mut registration = Registration::new("https://mastodon.social")?;
+//! registration.register(app)?;
+//! let url = registration.authorise()?;
+//! // Here you now need to open the url in the browser
+//! // And handle a the redirect url coming back with the code.
+//! let code = String::from("RETURNED_FROM_BROWSER");
+//! let mastodon = registration.create_access_token(code)?;
+//!
+//! println!("{:?}", mastodon.get_home_timeline()?);
+//! # Ok(())
+//! # }
+//! ```
 
 #[cfg_attr(test, deny(warnings))]
 
@@ -17,6 +46,10 @@ pub mod apps;
 pub mod status_builder;
 /// Entities returned from the API
 pub mod entities;
+/// Registering your app.
+pub mod registration;
+
+use std::ops;
 
 use json::Error as SerdeError;
 use reqwest::Error as HttpError;
@@ -26,6 +59,7 @@ use reqwest::header::{Authorization, Bearer, Headers};
 use entities::prelude::*;
 use status_builder::StatusBuilder;
 
+pub use registration::Registration;
 pub type Result<T> = std::result::Result<T, Error>;
 
 macro_rules! methods {
@@ -35,7 +69,7 @@ macro_rules! methods {
             -> Result<T>
             {
                 Ok(self.client.$method(&url)
-                   .headers(self.access_token.clone().unwrap())
+                   .headers(self.headers.clone())
                    .send()?
                    .json()?)
             }
@@ -53,7 +87,6 @@ macro_rules! route {
         #[doc = "# Errors"]
         /// If `access_token` is not set.
         pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
-            self.has_access_token()?;
 
             let form_data = json!({
                 $(
@@ -62,7 +95,7 @@ macro_rules! route {
             });
 
             Ok(self.client.post(&self.route(concat!("/api/v1/", $url)))
-                          .headers(self.access_token.clone().unwrap())
+                          .headers(self.headers.clone())
                           .form(&form_data)
                           .send()?
                           .json()?)
@@ -78,8 +111,6 @@ macro_rules! route {
         #[doc = "# Errors"]
         /// If `access_token` is not set.
         pub fn $name(&self) -> Result<$ret> {
-            self.has_access_token()?;
-
             self.$method(self.route(concat!("/api/v1/", $url)))
         }
 
@@ -100,9 +131,6 @@ macro_rules! route_id {
             #[doc = "# Errors"]
             /// If `access_token` is not set.
             pub fn $name(&self, id: u64) -> Result<$ret> {
-                self.has_access_token()?;
-
-
                 self.$method(self.route(&format!(concat!("/api/v1/", $url), id)))
             }
          )*
@@ -112,26 +140,21 @@ macro_rules! route_id {
 
 #[derive(Clone, Debug)]
 pub struct Mastodon {
-    base_url: String,
     client: Client,
-    client_id: Option<String>,
-    client_secret: Option<String>,
-    redirect_uri: Option<String>,
-    access_token: Option<Headers>,
-    id: Option<u64>,
+    headers: Headers,
+    /// Raw data about your mastodon instance.
+    pub data: Data
 }
 
-#[derive(Deserialize)]
-struct OAuth {
-    client_id: String,
-    client_secret: String,
-    id: u64,
-    redirect_uri: String,
-}
-
-#[derive(Deserialize)]
-struct AccessToken {
-    access_token: String,
+/// Raw data about mastodon app. Save `Data` using `serde` to prevent needing
+/// to authenticate on every run.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Data {
+    pub base: String,
+    pub client_id: String,
+    pub client_secret: String,
+    pub redirect: String,
+    pub token: String,
 }
 
 #[derive(Debug)]
@@ -144,104 +167,43 @@ pub enum Error {
 }
 
 impl Mastodon {
-    /// Inits new Mastodon object. `base_url` is expected in the following
-    /// format `https://mastodon.social` with no leading forward slash.
-    ///
-    /// ```
-    /// use mammut::Mastodon;
-    ///
-    /// let mastodon = Mastodon::new("https://mastodon.social").unwrap();
-    /// ```
-    pub fn new<I: Into<String>>(base_url: I) -> Result<Self> {
-        Ok(Mastodon {
-            base_url: base_url.into(),
-            client: Client::new()?,
-            client_id: None,
-            client_secret: None,
-            redirect_uri: None,
-            access_token: None,
-            id: None,
-        })
-    }
+    fn from_registration(base: String,
+                         client_id: String,
+                         client_secret: String,
+                         redirect: String,
+                         token: String,
+                         client: Client)
+        -> Self
+    {
+        let data = Data {
+            base: base,
+            client_id: client_id,
+            client_secret: client_secret,
+            redirect: redirect,
+            token: token,
 
-    /// Register the application with the server from `base_url`.
-    ///
-    /// ```
-    /// # extern crate mammut;
-    /// # fn main() {
-    /// #    try().unwrap();
-    /// # }
-    ///
-    /// # fn try() -> mammut::Result<()> {
-    /// use mammut::Mastodon;
-    /// use mammut::apps::{AppBuilder, Scope};
-    ///
-    /// let app = AppBuilder {
-    ///     client_name: "mammut_test",
-    ///     redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
-    ///     scopes: Scope::Read,
-    ///     website: None,
-    /// };
-    ///
-    /// let mut mastodon = Mastodon::new("https://mastodon.social")?;
-    /// mastodon.register(app)?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn register(&mut self, app_builder: apps::AppBuilder) -> Result<()> {
-        let url = self.route("/api/v1/apps");
+        };
 
-        let app: OAuth = self.client.post(&url).form(&app_builder).send()?.json()?;
-
-        self.id = Some(app.id);
-        self.client_id = Some(app.client_id);
-        self.client_secret = Some(app.client_secret);
-        self.redirect_uri = Some(app.redirect_uri);
-
-        Ok(())
-    }
-
-    /// Returns the full url needed for authorisation. This needs to be opened
-    /// in a browser.
-    pub fn authorise(&mut self) -> Result<String> {
-        self.is_registered()?;
-
-        let url = format!(
-            "{}/oauth/authorize?client_id={}&redirect_uri={}&response_type=code",
-            self.base_url,
-            self.client_id.clone().unwrap(),
-            self.redirect_uri.clone().unwrap(),
-        );
-
-        Ok(url)
-    }
-
-    /// Requires the authorisation code returned from the `redirect_url`
-    pub fn get_access_token(&mut self, code: String) -> Result<()> {
-        self.is_registered()?;
-
-        let url = format!(
-            "{}/oauth/token?client_id={}&client_secret={}&code={}&grant_type=authorization_code&redirect_uri={}",
-            self.base_url,
-            self.client_id.clone().unwrap(),
-            self.client_secret.clone().unwrap(),
-            code,
-            self.redirect_uri.clone().unwrap(),
-        );
-
-        let access_token: AccessToken = self.client.post(&url).send()?.json()?;
-
-        self.set_access_token(access_token.access_token);
-        Ok(())
-    }
-
-    /// Set `access_token` required to use any method about the user.
-    fn set_access_token(&mut self, access_token: String) {
         let mut headers = Headers::new();
+        headers.set(Authorization(Bearer { token: data.token.clone() }));
 
-        headers.set(Authorization(Bearer { token: access_token }));
+        Mastodon {
+            client: client,
+            headers: headers,
+            data: data,
+        }
+    }
 
-        self.access_token = Some(headers);
+    /// Creates a mastodon instance from the data struct.
+    pub fn from_data(data: Data) -> Result<Self> {
+        let mut headers = Headers::new();
+        headers.set(Authorization(Bearer { token: data.token.clone() }));
+
+        Ok(Mastodon {
+            client: Client::new()?,
+            headers: headers,
+            data: data,
+        })
     }
 
     route! {
@@ -287,8 +249,6 @@ impl Mastodon {
     }
 
     pub fn get_public_timeline(&self, local: bool) -> Result<Vec<Status>> {
-        self.has_access_token()?;
-
         let mut url = self.route("/api/v1/timelines/public");
 
         if local {
@@ -299,8 +259,6 @@ impl Mastodon {
     }
 
     pub fn get_tagged_timeline(&self, hashtag: String, local: bool) -> Result<Vec<Status>> {
-        self.has_access_token()?;
-
         let mut url = self.route("/api/v1/timelines/tag/");
         url += &hashtag;
 
@@ -314,8 +272,7 @@ impl Mastodon {
     pub fn statuses(&self, id: u64, only_media: bool, exclude_replies: bool)
         -> Result<Vec<Status>>
     {
-        self.has_access_token()?;
-        let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base_url, id);
+        let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
 
         if only_media {
             url += "?only_media=1";
@@ -336,8 +293,6 @@ impl Mastodon {
 
 
     pub fn relationships(&self, ids: &[u64]) -> Result<Vec<Relationship>> {
-        self.has_access_token()?;
-
         let mut url = self.route("/api/v1/accounts/relationships?");
 
         if ids.len() == 1 {
@@ -357,44 +312,29 @@ impl Mastodon {
 
     // TODO: Add a limit fn
     pub fn search_accounts(&self, query: &str) -> Result<Vec<Account>> {
-        self.has_access_token()?;
-        self.get(format!("{}/api/v1/accounts/search?q={}", self.base_url, query))
+        self.get(format!("{}/api/v1/accounts/search?q={}", self.base, query))
     }
 
     pub fn instance(&self) -> Result<Instance> {
-        self.is_registered()?;
-
         self.get(self.route("/api/v1/instance"))
-    }
-
-
-    fn has_access_token(&self) -> Result<()> {
-        if self.access_token.is_none() {
-            Err(Error::AccessTokenRequired)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn is_registered(&self) -> Result<()> {
-        if self.client_id.is_none() {
-            Err(Error::ClientIdRequired)
-        } else if self.client_secret.is_none() {
-            Err(Error::ClientSecretRequired)
-        } else {
-            Ok(())
-        }
     }
 
     methods![get, post, delete,];
 
     fn route(&self, url: &str) -> String {
-        let mut s = self.base_url.clone();
+        let mut s = self.base.clone();
         s += url;
         s
     }
 }
 
+impl ops::Deref for Mastodon {
+    type Target = Data;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
 
 macro_rules! from {
     ($($typ:ident, $variant:ident,)*) => {

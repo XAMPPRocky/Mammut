@@ -1,5 +1,5 @@
 use chrono::prelude::*;
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Account {
     pub id: u64,
     pub username: String,

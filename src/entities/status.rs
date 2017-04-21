@@ -2,7 +2,7 @@ use chrono::prelude::*;
 use super::prelude::*;
 use status_builder::Visibility;
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Status {
     pub id: i64,
     pub uri: String,
@@ -26,7 +26,7 @@ pub struct Status {
     pub application: Application,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Mention {
     pub url: String,
     pub username: String,
@@ -34,16 +34,14 @@ pub struct Mention {
     pub id: u64,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Tag {
     pub name: String,
     pub url: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Application {
     pub name: String,
     pub website: String,
 }
-
-
