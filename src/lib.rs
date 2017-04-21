@@ -2,7 +2,6 @@
 //!
 //! Most of the api is documented on [Mastodon's
 //! github](https://github.com/tootsuite/mastodon/blob/master/docs/Using-the-API/API.md#tag)
-#![deny(unused_must_use)]
 
 #[cfg_attr(test, deny(warnings))]
 
@@ -12,8 +11,11 @@ extern crate chrono;
 extern crate reqwest;
 extern crate serde;
 
+/// Registering your App
 pub mod apps;
+/// Constructing a status
 pub mod status_builder;
+/// Entities returned from the API
 pub mod entities;
 
 use json::Error as SerdeError;
@@ -44,7 +46,12 @@ macro_rules! methods {
 macro_rules! route {
 
     ((post ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Requires `access_token` or will return error.
+        /// Equivalent to `/api/v1/
+        #[doc = $url]
+        /// `
+        ///
+        #[doc = "# Errors"]
+        /// If `access_token` is not set.
         pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
             self.has_access_token()?;
 
@@ -64,7 +71,12 @@ macro_rules! route {
     };
 
     (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Requires `access_token` or will return error.
+        /// Equivalent to `/api/v1/
+        #[doc = $url]
+        /// `
+        ///
+        #[doc = "# Errors"]
+        /// If `access_token` is not set.
         pub fn $name(&self) -> Result<$ret> {
             self.has_access_token()?;
 
@@ -81,7 +93,12 @@ macro_rules! route_id {
 
     ($(($method:ident) $name:ident: $url:expr => $ret:ty,)*) => {
         $(
-            /// Requires `access_token` or will return error.
+            /// Equivalent to `/api/v1/
+            #[doc = $url]
+            /// `
+            ///
+            #[doc = "# Errors"]
+            /// If `access_token` is not set.
             pub fn $name(&self, id: u64) -> Result<$ret> {
                 self.has_access_token()?;
 
@@ -110,6 +127,11 @@ struct OAuth {
     client_secret: String,
     id: u64,
     redirect_uri: String,
+}
+
+#[derive(Deserialize)]
+struct AccessToken {
+    access_token: String,
 }
 
 #[derive(Debug)]
@@ -194,8 +216,27 @@ impl Mastodon {
         Ok(url)
     }
 
+    /// Requires the authorisation code returned from the `redirect_url`
+    pub fn get_access_token(&mut self, code: String) -> Result<()> {
+        self.is_registered()?;
+
+        let url = format!(
+            "{}/oauth/token?client_id={}&client_secret={}&code={}&grant_type=authorization_code&redirect_uri={}",
+            self.base_url,
+            self.client_id.clone().unwrap(),
+            self.client_secret.clone().unwrap(),
+            code,
+            self.redirect_uri.clone().unwrap(),
+        );
+
+        let access_token: AccessToken = self.client.post(&url).send()?.json()?;
+
+        self.set_access_token(access_token.access_token);
+        Ok(())
+    }
+
     /// Set `access_token` required to use any method about the user.
-    pub fn set_access_token(&mut self, access_token: String) {
+    fn set_access_token(&mut self, access_token: String) {
         let mut headers = Headers::new();
 
         headers.set(Authorization(Bearer { token: access_token }));

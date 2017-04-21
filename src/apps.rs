@@ -1,3 +1,12 @@
+/// Builder struct for defining your application.
+/// ```
+/// let app = AppBuilder {
+///     client_name: "mammut_test",
+///     redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
+///     scopes: Scope::Read,
+///     website: None,
+/// };
+/// ```
 #[derive(Debug, Default, Serialize)]
 pub struct AppBuilder<'a> {
     pub client_name: &'a str,
@@ -9,10 +18,13 @@ pub struct AppBuilder<'a> {
 
 #[derive(Debug, Clone, Copy, Serialize)]
 pub enum Scope {
+    /// All Permissions, equiavlent to `read write follow`
     #[serde(rename = "read write follow")]
     All,
+    /// Only permission to add and remove followers.
     #[serde(rename = "follow")]
     Follow,
+    /// Read only permissions.
     #[serde(rename = "read")]
     Read,
     #[serde(rename = "read follow")]
