@@ -43,5 +43,5 @@ pub struct Tag {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Application {
     pub name: String,
-    pub website: String,
+    pub website: Option<String>,
 }
