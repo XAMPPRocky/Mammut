@@ -68,10 +68,16 @@ macro_rules! methods {
             fn $method<T: serde::Deserialize>(&self, url: String)
             -> Result<T>
             {
-                Ok(self.client.$method(&url)
+                let result: std::result::Result<T, ApiError> =
+                    self.client.$method(&url)
                    .headers(self.headers.clone())
                    .send()?
-                   .json()?)
+                   .json()?;
+
+                match result {
+                    Ok(t) => Ok(t),
+                    Err(error) => Err(Error::Api(error)),
+                }
             }
          )+
     };
@@ -159,11 +165,21 @@ pub struct Data {
 
 #[derive(Debug)]
 pub enum Error {
+    Api(ApiError),
     Serde(SerdeError),
     Http(HttpError),
     ClientIdRequired,
     ClientSecretRequired,
     AccessTokenRequired,
+}
+
+/// Error returned from the Mastodon API.
+#[derive(Clone, Debug, Deserialize)]
+pub struct ApiError {
+    /// The type of error.
+    pub error: String,
+    /// The description of the error.
+    pub error_description: String,
 }
 
 impl Mastodon {
