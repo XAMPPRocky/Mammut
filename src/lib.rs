@@ -68,15 +68,14 @@ macro_rules! methods {
             fn $method<T: serde::Deserialize>(&self, url: String)
             -> Result<T>
             {
-                let result: std::result::Result<T, ApiError> =
-                    self.client.$method(&url)
+                let mut response = self.client.$method(&url)
                    .headers(self.headers.clone())
-                   .send()?
-                   .json()?;
+                   .send()?;
 
-                match result {
-                    Ok(t) => Ok(t),
-                    Err(error) => Err(Error::Api(error)),
+                if let Ok(t) = response.json::<T>() {
+                    Ok(t)
+                } else {
+                    Err(Error::Api(response.json()?))
                 }
             }
          )+
@@ -100,11 +99,16 @@ macro_rules! route {
                     )*
             });
 
-            Ok(self.client.post(&self.route(concat!("/api/v1/", $url)))
+            let mut response = self.client.post(&self.route(concat!("/api/v1/", $url)))
                           .headers(self.headers.clone())
                           .form(&form_data)
-                          .send()?
-                          .json()?)
+                          .send()?;
+
+            if let Ok(t) = response.json::<$ret>() {
+                Ok(t)
+            } else {
+                Err(Error::Api(response.json()?))
+            }
         }
         route!{$($rest)*}
     };
