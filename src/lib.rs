@@ -50,6 +50,7 @@ pub mod entities;
 pub mod registration;
 
 use std::ops;
+use std::io::Error as IoError;
 
 use json::Error as SerdeError;
 use reqwest::Error as HttpError;
@@ -57,7 +58,7 @@ use reqwest::Client;
 use reqwest::header::{Authorization, Bearer, Headers};
 
 use entities::prelude::*;
-use status_builder::StatusBuilder;
+pub use status_builder::StatusBuilder;
 
 pub use registration::Registration;
 pub type Result<T> = std::result::Result<T, Error>;
@@ -72,11 +73,7 @@ macro_rules! methods {
                    .headers(self.headers.clone())
                    .send()?;
 
-                if let Ok(t) = response.json::<T>() {
-                    Ok(t)
-                } else {
-                    Err(Error::Api(response.json()?))
-                }
+                response.json()?
             }
          )+
     };
@@ -92,23 +89,24 @@ macro_rules! route {
         #[doc = "# Errors"]
         /// If `access_token` is not set.
         pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
+            use std::io::Read;
 
             let form_data = json!({
                 $(
                     stringify!($param): $param,
-                    )*
+                )*
             });
 
             let mut response = self.client.post(&self.route(concat!("/api/v1/", $url)))
-                          .headers(self.headers.clone())
-                          .form(&form_data)
-                          .send()?;
+                                          .headers(self.headers.clone())
+                                          .form(&form_data)
+                                          .send()?;
 
-            if let Ok(t) = response.json::<$ret>() {
-                Ok(t)
-            } else {
-                Err(Error::Api(response.json()?))
-            }
+            let mut vec = Vec::new();
+
+            response.read_to_end(&mut vec)?;
+
+            json::from_slice(&vec)?
         }
         route!{$($rest)*}
     };
@@ -167,13 +165,21 @@ pub struct Data {
     pub token: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
 pub enum Error {
     Api(ApiError),
+    #[serde(skip_deserializing)]
     Serde(SerdeError),
+    #[serde(skip_deserializing)]
     Http(HttpError),
+    #[serde(skip_deserializing)]
+    Io(IoError),
+    #[serde(skip_deserializing)]
     ClientIdRequired,
+    #[serde(skip_deserializing)]
     ClientSecretRequired,
+    #[serde(skip_deserializing)]
     AccessTokenRequired,
 }
 
@@ -183,7 +189,7 @@ pub struct ApiError {
     /// The type of error.
     pub error: String,
     /// The description of the error.
-    pub error_description: String,
+    pub error_description: Option<String>,
 }
 
 impl Mastodon {
@@ -194,25 +200,25 @@ impl Mastodon {
                          token: String,
                          client: Client)
         -> Self
-    {
-        let data = Data {
-            base: base,
-            client_id: client_id,
-            client_secret: client_secret,
-            redirect: redirect,
-            token: token,
+        {
+            let data = Data {
+                base: base,
+                client_id: client_id,
+                client_secret: client_secret,
+                redirect: redirect,
+                token: token,
 
-        };
+            };
 
-        let mut headers = Headers::new();
-        headers.set(Authorization(Bearer { token: data.token.clone() }));
+            let mut headers = Headers::new();
+            headers.set(Authorization(Bearer { token: data.token.clone() }));
 
-        Mastodon {
-            client: client,
-            headers: headers,
-            data: data,
+            Mastodon {
+                client: client,
+                headers: headers,
+                data: data,
+            }
         }
-    }
 
     /// Creates a mastodon instance from the data struct.
     pub fn from_data(data: Data) -> Result<Self> {
@@ -242,7 +248,6 @@ impl Mastodon {
         (post (account_id: u64, status_ids: Vec<u64>, comment: String,)) report:
             "reports" => Report,
         (post (q: String, resolve: bool,)) search: "search" => SearchResult,
-        (post (status: StatusBuilder,)) new_status: "statuses" => Status,
     }
 
     route_id! {
@@ -268,6 +273,25 @@ impl Mastodon {
         (delete) delete_status: "statuses/{}" => Empty,
     }
 
+    pub fn new_status(&self, status: StatusBuilder) -> Result<Status> {
+        use std::io::Read;
+
+        let mut response = self.client.post(&self.route("/api/v1/statuses"))
+            .headers(self.headers.clone())
+            .json(&status)
+            .send().expect("STAUS BUILDER IS BAD");
+
+
+        let mut vec = Vec::new();
+        response.read_to_end(&mut vec)?;
+
+        if let Ok(t) = json::from_slice(&vec) {
+            Ok(t)
+        } else {
+            Err(Error::Api(json::from_slice(&vec)?))
+        }
+    }
+
     pub fn get_public_timeline(&self, local: bool) -> Result<Vec<Status>> {
         let mut url = self.route("/api/v1/timelines/public");
 
@@ -291,25 +315,25 @@ impl Mastodon {
 
     pub fn statuses(&self, id: u64, only_media: bool, exclude_replies: bool)
         -> Result<Vec<Status>>
-    {
-        let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
+        {
+            let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
 
-        if only_media {
-            url += "?only_media=1";
+            if only_media {
+                url += "?only_media=1";
+            }
+
+            if exclude_replies {
+                url += if only_media {
+                    "&"
+                } else {
+                    "?"
+                };
+
+                url += "exclude_replies=1";
+            }
+
+            self.get(url)
         }
-
-        if exclude_replies {
-            url += if only_media {
-                "&"
-            } else {
-                "?"
-            };
-
-            url += "exclude_replies=1";
-        }
-
-        self.get(url)
-    }
 
 
     pub fn relationships(&self, ids: &[u64]) -> Result<Vec<Relationship>> {
@@ -372,4 +396,5 @@ macro_rules! from {
 from! {
     SerdeError, Serde,
     HttpError, Http,
+    IoError, Io,
 }

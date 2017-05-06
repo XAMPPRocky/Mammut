@@ -1,6 +1,6 @@
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct StatusBuilder {
-    status: String,
+    pub status: String,
     /// User ids of those to reply to.
     #[serde(skip_serializing_if="Option::is_none")]
     pub in_reply_to_id: Option<u64>,

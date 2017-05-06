@@ -1,7 +1,7 @@
 use reqwest::Client;
 
 use super::{Error, Mastodon, Result};
-use apps::AppBuilder;
+use apps::{AppBuilder, Scope};
 
 /// Handles registering your mastodon app to your instance. It is recommended
 /// you cache your data struct to avoid registering on every run.
@@ -11,6 +11,7 @@ pub struct Registration {
     client_id: Option<String>,
     client_secret: Option<String>,
     redirect: Option<String>,
+    scopes: Scope,
 }
 
 #[derive(Deserialize)]
@@ -33,6 +34,7 @@ impl Registration {
             client_id: None,
             client_secret: None,
             redirect: None,
+            scopes: Scope::Read,
         })
     }
 
@@ -68,6 +70,7 @@ impl Registration {
     /// ```
     pub fn register(&mut self, app_builder: AppBuilder) -> Result<()> {
         let url = format!("{}/api/v1/apps", self.base);
+        self.scopes = app_builder.scopes;
 
         let app: OAuth = self.client.post(&url).form(&app_builder).send()?.json()?;
 
@@ -84,10 +87,11 @@ impl Registration {
         self.is_registered()?;
 
         let url = format!(
-            "{}/oauth/authorize?client_id={}&redirect_uri={}&response_type=code",
+            "{}/oauth/authorize?client_id={}&redirect_uri={}&scope={}&response_type=code",
             self.base,
             self.client_id.clone().unwrap(),
             self.redirect.clone().unwrap(),
+            self.scopes,
         );
 
         Ok(url)

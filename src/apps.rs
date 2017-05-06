@@ -37,6 +37,21 @@ pub enum Scope {
     WriteFollow,
 }
 
+impl ::std::fmt::Display for Scope {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        use self::Scope::*;
+        write!(f, "{}", match *self {
+            All => "read write follow",
+            Follow => "follow",
+            Read => "read",
+            ReadFollow => "read follow",
+            ReadWrite => "read write",
+            Write => "write",
+            WriteFollow => "write follow"
+        })
+    }
+}
+
 impl Default for Scope {
     fn default() -> Self {
         Scope::Read
