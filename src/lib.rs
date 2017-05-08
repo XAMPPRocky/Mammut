@@ -69,11 +69,20 @@ macro_rules! methods {
             fn $method<T: serde::Deserialize>(&self, url: String)
             -> Result<T>
             {
-                let mut response = self.client.$method(&url)
-                   .headers(self.headers.clone())
-                   .send()?;
+                use std::io::Read;
 
-                response.json()?
+                let mut response = self.client.$method(&url)
+                    .headers(self.headers.clone())
+                    .send()?;
+
+                let mut vec = Vec::new();
+                response.read_to_end(&mut vec)?;
+
+                if let Ok(t) = json::from_slice(&vec) {
+                    Ok(t)
+                } else {
+                    Err(Error::Api(json::from_slice(&vec)?))
+                }
             }
          )+
     };
@@ -94,19 +103,23 @@ macro_rules! route {
             let form_data = json!({
                 $(
                     stringify!($param): $param,
-                )*
+                    )*
             });
 
             let mut response = self.client.post(&self.route(concat!("/api/v1/", $url)))
-                                          .headers(self.headers.clone())
-                                          .form(&form_data)
-                                          .send()?;
+                .headers(self.headers.clone())
+                .form(&form_data)
+                .send()?;
 
             let mut vec = Vec::new();
 
             response.read_to_end(&mut vec)?;
 
-            json::from_slice(&vec)?
+            if let Ok(t) = json::from_slice(&vec) {
+                Ok(t)
+            } else {
+                Err(Error::Api(json::from_slice(&vec)?))
+            }
         }
         route!{$($rest)*}
     };
@@ -279,8 +292,7 @@ impl Mastodon {
         let mut response = self.client.post(&self.route("/api/v1/statuses"))
             .headers(self.headers.clone())
             .json(&status)
-            .send().expect("STAUS BUILDER IS BAD");
-
+            .send()?;
 
         let mut vec = Vec::new();
         response.read_to_end(&mut vec)?;
