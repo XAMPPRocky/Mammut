@@ -32,7 +32,7 @@
 //! # }
 //! ```
 
-#[cfg_attr(test, deny(warnings))]
+#![cfg_attr(test, deny(warnings))]
 
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate serde_json as json;
@@ -66,7 +66,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 macro_rules! methods {
     ($($method:ident,)+) => {
         $(
-            fn $method<T: serde::Deserialize>(&self, url: String)
+            fn $method<T: for<'de> serde::Deserialize<'de>>(&self, url: String)
             -> Result<T>
             {
                 use std::io::Read;
