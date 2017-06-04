@@ -17,4 +17,6 @@ pub enum MediaType {
     Video,
     #[serde(rename = "gifv")]
     Gifv,
+    #[serde(rename = "unknown")]
+    Unknown,
 }
