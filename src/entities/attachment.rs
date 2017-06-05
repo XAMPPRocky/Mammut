@@ -6,7 +6,7 @@ pub struct Attachment {
     pub url: String,
     pub remote_url: String,
     pub preview_url: String,
-    pub text_url: String,
+    pub text_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone, Copy)]
@@ -17,4 +17,6 @@ pub enum MediaType {
     Video,
     #[serde(rename = "gifv")]
     Gifv,
+    #[serde(rename = "unknown")]
+    Unknown,
 }
