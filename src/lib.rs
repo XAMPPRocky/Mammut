@@ -355,7 +355,7 @@ impl Mastodon {
     /// let since = 1497393079;
     /// let statuses_since = mastodon.statuses(account_id, false, true, since);
     /// ```
-    pub fn statuses<S: Into<Option<u64>>>(&self, id: u64, only_media: bool, exclude_replies: bool, since_id: S)
+    pub fn statuses<S: Into<Option<i64>>>(&self, id: u64, only_media: bool, exclude_replies: bool, since_id: S)
         -> Result<Vec<Status>>
         {
             let mut params = Vec::new();
