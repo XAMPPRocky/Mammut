@@ -16,7 +16,5 @@ serde_json = "1"
 serde_derive = "1"
 
 [dependencies.chrono]
-# Locked to 0.3.0 since chrono 0.3.1 uses serde ^1, which is incompatible
-# with serde 0.9 specified above.
-version = "0.3"
+version = "0.4"
 features = ["serde"]

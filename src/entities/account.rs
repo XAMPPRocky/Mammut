@@ -12,7 +12,7 @@ pub struct Account {
     pub header: String,
     pub header_static: String,
     pub locked: bool,
-    pub created_at: DateTime<UTC>,
+    pub created_at: DateTime<Utc>,
     pub followers_count: u64,
     pub following_count: u64,
     pub statuses_count: u64,

@@ -12,7 +12,7 @@ pub struct Status {
     pub in_reply_to_account_id: Option<u64>,
     pub reblog: Option<Box<Status>>,
     pub content: String,
-    pub created_at: DateTime<UTC>,
+    pub created_at: DateTime<Utc>,
     pub reblogs_count: u64,
     pub favourites_count: u64,
     pub reblogged: Option<bool>,
