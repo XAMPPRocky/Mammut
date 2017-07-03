@@ -7,7 +7,7 @@ pub struct Notification {
     pub id: u64,
     #[serde(rename = "type")]
     pub notification_type: NotificationType,
-    pub created_at: DateTime<UTC>,
+    pub created_at: DateTime<Utc>,
     pub account: Account,
     pub status: Option<Status>,
 }
