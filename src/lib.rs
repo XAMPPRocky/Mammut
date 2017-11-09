@@ -50,6 +50,8 @@ pub mod entities;
 pub mod registration;
 
 use std::ops;
+use std::fmt;
+use std::error::Error as StdError;
 use std::io::Error as IoError;
 
 use json::Error as SerdeError;
@@ -194,6 +196,26 @@ pub enum Error {
     ClientSecretRequired,
     #[serde(skip_deserializing)]
     AccessTokenRequired,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl StdError for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::Api(ref e) => &e.error,
+            Error::Serde(ref e) => e.description(),
+            Error::Http(ref e) => e.description(),
+            Error::Io(ref e) => e.description(),
+            Error::ClientIdRequired => "ClientIdRequired",
+            Error::ClientSecretRequired => "ClientSecretRequired",
+            Error::AccessTokenRequired => "AccessTokenRequired",
+        }
+    }
 }
 
 /// Error returned from the Mastodon API.
