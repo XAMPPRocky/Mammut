@@ -19,7 +19,7 @@
 //!     website: None,
 //! };
 //!
-//! let mut registration = Registration::new("https://mastodon.social")?;
+//! let mut registration = Registration::new("https://mastodon.social");
 //! registration.register(app)?;
 //! let url = registration.authorise()?;
 //! // Here you now need to open the url in the browser
@@ -56,7 +56,7 @@ use std::io::Error as IoError;
 
 use json::Error as SerdeError;
 use reqwest::Error as HttpError;
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use reqwest::header::{Authorization, Bearer, Headers};
 
 use entities::prelude::*;
@@ -92,6 +92,49 @@ macro_rules! methods {
 
 macro_rules! route {
 
+    ((post multipart ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
+        /// Equivalent to `/api/v1/
+        #[doc = $url]
+        /// `
+        ///
+        #[doc = "# Errors"]
+        /// If `access_token` is not set.
+        pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
+            use std::io::Read;
+            use reqwest::multipart::Form;
+
+            let form_data = Form::new()
+            $(
+                .file(stringify!($param), $param)?
+            )*;
+
+            let mut response = self.client.post(&self.route(concat!("/api/v1/", $url)))
+                .headers(self.headers.clone())
+                .multipart(form_data)
+                .send()?;
+
+            let status = response.status().clone();
+
+            if status.is_client_error() {
+                return Err(Error::Client(status));
+            } else if status.is_server_error() {
+                return Err(Error::Server(status));
+            }
+
+            let mut vec = Vec::new();
+
+            response.read_to_end(&mut vec)?;
+
+
+            match json::from_slice::<$ret>(&vec) {
+                Ok(res) => Ok(res),
+                Err(_) => Err(Error::Api(json::from_slice(&vec)?)),
+            }
+        }
+
+        route!{$($rest)*}
+    };
+
     ((post ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
         /// Equivalent to `/api/v1/
         #[doc = $url]
@@ -105,24 +148,32 @@ macro_rules! route {
             let form_data = json!({
                 $(
                     stringify!($param): $param,
-                    )*
+                )*
             });
 
             let mut response = self.client.post(&self.route(concat!("/api/v1/", $url)))
                 .headers(self.headers.clone())
-                .form(&form_data)
+                .json(&form_data)
                 .send()?;
+
+            let status = response.status().clone();
+
+            if status.is_client_error() {
+                return Err(Error::Client(status));
+            } else if status.is_server_error() {
+                return Err(Error::Server(status));
+            }
 
             let mut vec = Vec::new();
 
             response.read_to_end(&mut vec)?;
 
-            if let Ok(t) = json::from_slice(&vec) {
-                Ok(t)
-            } else {
-                Err(Error::Api(json::from_slice(&vec)?))
+            match json::from_slice(&vec) {
+                Ok(res) => Ok(res),
+                Err(_) => Err(Error::Api(json::from_slice(&vec)?)),
             }
         }
+
         route!{$($rest)*}
     };
 
@@ -196,6 +247,10 @@ pub enum Error {
     ClientSecretRequired,
     #[serde(skip_deserializing)]
     AccessTokenRequired,
+    #[serde(skip_deserializing)]
+    Client(StatusCode),
+    #[serde(skip_deserializing)]
+    Server(StatusCode),
 }
 
 impl fmt::Display for Error {
@@ -211,6 +266,9 @@ impl StdError for Error {
             Error::Serde(ref e) => e.description(),
             Error::Http(ref e) => e.description(),
             Error::Io(ref e) => e.description(),
+            Error::Client(ref status) | Error::Server(ref status) => {
+                status.canonical_reason().unwrap_or("Unknown Status code")
+            },
             Error::ClientIdRequired => "ClientIdRequired",
             Error::ClientSecretRequired => "ClientSecretRequired",
             Error::AccessTokenRequired => "AccessTokenRequired",
@@ -256,15 +314,15 @@ impl Mastodon {
         }
 
     /// Creates a mastodon instance from the data struct.
-    pub fn from_data(data: Data) -> Result<Self> {
+    pub fn from_data(data: Data) -> Self {
         let mut headers = Headers::new();
         headers.set(Authorization(Bearer { token: data.token.clone() }));
 
-        Ok(Mastodon {
-            client: Client::new()?,
+        Mastodon {
+            client: Client::new(),
             headers: headers,
             data: data,
-        })
+        }
     }
 
     route! {
@@ -279,7 +337,7 @@ impl Mastodon {
         (post (id: u64,)) reject_follow_request: "accounts/follow_requests/reject" => Empty,
         (post (uri: String,)) follows: "follows" => Account,
         (post) clear_notifications: "notifications/clear" => Empty,
-        (post (file: Vec<u8>,)) media: "media" => Attachment,
+        (post multipart (file: String,)) media: "media" => Attachment,
         (post (account_id: u64, status_ids: Vec<u64>, comment: String,)) report:
             "reports" => Report,
         (post (q: String, resolve: bool,)) search: "search" => SearchResult,

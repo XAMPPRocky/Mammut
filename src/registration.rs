@@ -27,15 +27,15 @@ struct AccessToken {
 }
 
 impl Registration {
-    pub fn new<I: Into<String>>(base: I) -> Result<Self> {
-        Ok(Registration {
+    pub fn new<I: Into<String>>(base: I) -> Self {
+        Registration {
             base: base.into(),
-            client: Client::new()?,
+            client: Client::new(),
             client_id: None,
             client_secret: None,
             redirect: None,
             scopes: Scope::Read,
-        })
+        }
     }
 
     /// Register the application with the server from the `base` url.
@@ -56,7 +56,7 @@ impl Registration {
     ///     website: None,
     /// };
     ///
-    /// let mut registration = Registration::new("https://mastodon.social")?;
+    /// let mut registration = Registration::new("https://mastodon.social");
     /// registration.register(app)?;
     /// let url = registration.authorise()?;
     /// // Here you now need to open the url in the browser
