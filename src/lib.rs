@@ -39,6 +39,7 @@
 extern crate chrono;
 extern crate reqwest;
 extern crate serde;
+extern crate url;
 
 /// Registering your App
 pub mod apps;
@@ -58,6 +59,7 @@ use json::Error as SerdeError;
 use reqwest::Error as HttpError;
 use reqwest::Client;
 use reqwest::header::{Authorization, Bearer, Headers};
+use url::{Url, ParseError};
 
 use entities::prelude::*;
 pub use status_builder::StatusBuilder;
@@ -196,6 +198,8 @@ pub enum Error {
     ClientSecretRequired,
     #[serde(skip_deserializing)]
     AccessTokenRequired,
+    #[serde(skip_deserializing)]
+    Url(ParseError),
 }
 
 impl fmt::Display for Error {
@@ -347,26 +351,52 @@ impl Mastodon {
         self.get(url)
     }
 
-    pub fn statuses(&self, id: u64, only_media: bool, exclude_replies: bool)
+    /// Fetches statuses for an account.
+    ///
+    /// `Into<Option<u64>>` allows this function to be called with `since_id` directly, no need
+    /// for the caller to wrap it in an `Option`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mammut::{Data, Mastodon};
+    ///
+    /// let token = Data {
+    ///     base: "https://example.com".to_string(),
+    ///     client_id: "your client id".to_string(),
+    ///     client_secret: "your client secret".to_string(),
+    ///     redirect: "https://redirect.example.com".to_string(),
+    ///     token: "your access token".to_string(),
+    /// };
+    ///
+    /// let mastodon = Mastodon::from_data(token).expect("error creating client");
+    /// 
+    /// let account_id = 23901;
+    /// let recent_statuses = mastodon.statuses(account_id, false, true, None);
+    ///
+    /// let since = 1497393079;
+    /// let statuses_since = mastodon.statuses(account_id, false, true, since);
+    /// ```
+    pub fn statuses<S: Into<Option<i64>>>(&self, id: u64, only_media: bool, exclude_replies: bool, since_id: S)
         -> Result<Vec<Status>>
         {
-            let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
+            let mut params = Vec::new();
 
             if only_media {
-                url += "?only_media=1";
+                params.push(("only_media", "1".to_string()));
             }
 
             if exclude_replies {
-                url += if only_media {
-                    "&"
-                } else {
-                    "?"
-                };
-
-                url += "exclude_replies=1";
+                params.push(("exclude_replies", "1".to_string()));
             }
 
-            self.get(url)
+            if let Some(since_id) = since_id.into() {
+                params.push(("since_id", since_id.to_string()));
+            }
+
+            let url = Url::parse_with_params(&format!("{}/api/v1/accounts/{}/statuses", self.base, id), &params)?;
+
+            self.get(url.into_string())
         }
 
 
@@ -431,4 +461,5 @@ from! {
     SerdeError, Serde,
     HttpError, Http,
     IoError, Io,
+    ParseError, Url,
 }
