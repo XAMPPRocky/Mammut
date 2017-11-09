@@ -49,10 +49,11 @@ pub mod entities;
 /// Registering your app.
 pub mod registration;
 
-use std::ops;
-use std::fmt;
+use std::borrow::Cow;
 use std::error::Error as StdError;
+use std::fmt;
 use std::io::Error as IoError;
+use std::ops;
 
 use json::Error as SerdeError;
 use reqwest::Error as HttpError;
@@ -105,7 +106,7 @@ macro_rules! route {
 
             let form_data = Form::new()
             $(
-                .file(stringify!($param), $param)?
+                .file(stringify!($param), $param.as_ref())?
             )*;
 
             let mut response = self.client.post(&self.route(concat!("/api/v1/", $url)))
@@ -224,31 +225,43 @@ pub struct Mastodon {
 /// to authenticate on every run.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Data {
-    pub base: String,
-    pub client_id: String,
-    pub client_secret: String,
-    pub redirect: String,
-    pub token: String,
+    pub base: Cow<'static, str>,
+    pub client_id: Cow<'static, str>,
+    pub client_secret: Cow<'static, str>,
+    pub redirect: Cow<'static, str>,
+    pub token: Cow<'static, str>,
 }
 
+/// enum of possible errors encountered using the mastodon API.
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum Error {
+    /// Error from the Mastodon API. This typically means something went
+    /// wrong with your authentication or data.
     Api(ApiError),
+    /// Error deserialising to json. Typically represents a breaking change in
+    /// the Mastodon API
     #[serde(skip_deserializing)]
     Serde(SerdeError),
+    /// Error encountered in the HTTP backend while requesting a route.
     #[serde(skip_deserializing)]
     Http(HttpError),
+    /// Wrapper around the `std::io::Error` struct.
     #[serde(skip_deserializing)]
     Io(IoError),
+    /// Missing Client Id.
     #[serde(skip_deserializing)]
     ClientIdRequired,
+    /// Missing Client Secret.
     #[serde(skip_deserializing)]
     ClientSecretRequired,
+    /// Missing Access Token.
     #[serde(skip_deserializing)]
     AccessTokenRequired,
+    /// Generic client error.
     #[serde(skip_deserializing)]
     Client(StatusCode),
+    /// Generic server error.
     #[serde(skip_deserializing)]
     Server(StatusCode),
 }
@@ -286,25 +299,26 @@ pub struct ApiError {
 }
 
 impl Mastodon {
-    fn from_registration(base: String,
-                         client_id: String,
-                         client_secret: String,
-                         redirect: String,
-                         token: String,
+    fn from_registration<I>(base: I,
+                         client_id: I,
+                         client_secret: I,
+                         redirect: I,
+                         token: I,
                          client: Client)
         -> Self
+        where I: Into<Cow<'static, str>>
         {
             let data = Data {
-                base: base,
-                client_id: client_id,
-                client_secret: client_secret,
-                redirect: redirect,
-                token: token,
+                base: base.into(),
+                client_id: client_id.into(),
+                client_secret: client_secret.into(),
+                redirect: redirect.into(),
+                token: token.into(),
 
             };
 
             let mut headers = Headers::new();
-            headers.set(Authorization(Bearer { token: data.token.clone() }));
+            headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
 
             Mastodon {
                 client: client,
@@ -316,7 +330,7 @@ impl Mastodon {
     /// Creates a mastodon instance from the data struct.
     pub fn from_data(data: Data) -> Self {
         let mut headers = Headers::new();
-        headers.set(Authorization(Bearer { token: data.token.clone() }));
+        headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
 
         Mastodon {
             client: Client::new(),
@@ -335,9 +349,9 @@ impl Mastodon {
         (get) get_home_timeline: "timelines/home" => Vec<Status>,
         (post (id: u64,)) allow_follow_request: "accounts/follow_requests/authorize" => Empty,
         (post (id: u64,)) reject_follow_request: "accounts/follow_requests/reject" => Empty,
-        (post (uri: String,)) follows: "follows" => Account,
+        (post (uri: Cow<'static, str>,)) follows: "follows" => Account,
         (post) clear_notifications: "notifications/clear" => Empty,
-        (post multipart (file: String,)) media: "media" => Attachment,
+        (post multipart (file: Cow<'static, str>,)) media: "media" => Attachment,
         (post (account_id: u64, status_ids: Vec<u64>, comment: String,)) report:
             "reports" => Report,
         (post (q: String, resolve: bool,)) search: "search" => SearchResult,
@@ -458,7 +472,7 @@ impl Mastodon {
     methods![get, post, delete,];
 
     fn route(&self, url: &str) -> String {
-        let mut s = self.base.clone();
+        let mut s = (*self.base).to_owned();
         s += url;
         s
     }
