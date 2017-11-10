@@ -81,10 +81,9 @@ macro_rules! methods {
                 let mut vec = Vec::new();
                 response.read_to_end(&mut vec)?;
 
-                if let Ok(t) = json::from_slice(&vec) {
-                    Ok(t)
-                } else {
-                    Err(Error::Api(json::from_slice(&vec)?))
+                match json::from_slice(&vec) {
+                    Ok(t) => Ok(t),
+                    Err(e) => Err(e.into()),
                 }
             }
          )+
