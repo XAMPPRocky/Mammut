@@ -83,7 +83,14 @@ macro_rules! methods {
 
                 match json::from_slice(&vec) {
                     Ok(t) => Ok(t),
-                    Err(e) => Err(e.into()),
+                    // If deserializing into the desired type fails try again to
+                    // see if this is an error response.
+                    Err(e) => {
+                        if let Ok(error) = json::from_slice(&vec) {
+                            return Err(Error::Api(error));
+                        }
+                        Err(e.into())
+                    },
                 }
             }
          )+
