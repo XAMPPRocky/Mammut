@@ -275,7 +275,9 @@ impl fmt::Display for Error {
 impl StdError for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::Api(ref e) => &e.error,
+            Error::Api(ref e) => {
+                e.error_description.as_ref().unwrap_or(&e.error)
+            },
             Error::Serde(ref e) => e.description(),
             Error::Http(ref e) => e.description(),
             Error::Io(ref e) => e.description(),
