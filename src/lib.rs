@@ -33,6 +33,7 @@
 //! ```
 
 #![cfg_attr(test, deny(warnings))]
+#![cfg_attr(test, deny(missing_docs))]
 
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate serde_json as json;
@@ -64,6 +65,7 @@ use entities::prelude::*;
 pub use status_builder::StatusBuilder;
 
 pub use registration::Registration;
+/// Convience type over `std::result::Result` with `Error` as the error type.
 pub type Result<T> = std::result::Result<T, Error>;
 
 macro_rules! methods {
@@ -213,6 +215,7 @@ macro_rules! route_id {
 
 }
 
+/// Your mastodon application client, handles all requests to and from Mastodon.
 #[derive(Clone, Debug)]
 pub struct Mastodon {
     client: Client,
@@ -225,10 +228,15 @@ pub struct Mastodon {
 /// to authenticate on every run.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Data {
+    /// Base url of instance eg. `https://mastodon.social`.
     pub base: Cow<'static, str>,
+    /// The client's id given by the instance.
     pub client_id: Cow<'static, str>,
+    /// The client's secret given by the instance.
     pub client_secret: Cow<'static, str>,
+    /// Url to redirect back to your application from the instance signup.
     pub redirect: Cow<'static, str>,
+    /// The client's access token.
     pub token: Cow<'static, str>,
 }
 
@@ -382,6 +390,7 @@ impl Mastodon {
         (delete) delete_status: "statuses/{}" => Empty,
     }
 
+    /// Post a new status to the account.
     pub fn new_status(&self, status: StatusBuilder) -> Result<Status> {
         use std::io::Read;
 
@@ -400,6 +409,7 @@ impl Mastodon {
         }
     }
 
+    /// Get the federated timeline for the instance.
     pub fn get_public_timeline(&self, local: bool) -> Result<Vec<Status>> {
         let mut url = self.route("/api/v1/timelines/public");
 
@@ -410,6 +420,8 @@ impl Mastodon {
         self.get(url)
     }
 
+    /// Get timeline filtered by a hashtag(eg. `#coffee`) either locally or
+    /// federated.
     pub fn get_tagged_timeline(&self, hashtag: String, local: bool) -> Result<Vec<Status>> {
         let mut url = self.route("/api/v1/timelines/tag/");
         url += &hashtag;
@@ -421,6 +433,8 @@ impl Mastodon {
         self.get(url)
     }
 
+    /// Get statuses of a single account by id. Optionally only with pictures
+    /// and or excluding replies.
     pub fn statuses(&self, id: u64, only_media: bool, exclude_replies: bool)
         -> Result<Vec<Status>>
         {
@@ -444,6 +458,8 @@ impl Mastodon {
         }
 
 
+    /// Returns the client account's relationship to a list of other accounts.
+    /// Such as whether they follow them or vice versa.
     pub fn relationships(&self, ids: &[u64]) -> Result<Vec<Relationship>> {
         let mut url = self.route("/api/v1/accounts/relationships?");
 
@@ -462,11 +478,15 @@ impl Mastodon {
         self.get(url)
     }
 
+    /// Search for accounts by their name.
+    /// Will lookup an account remotely if the search term is in the
+    /// `username@domain` format and not yet in the database.
     // TODO: Add a limit fn
     pub fn search_accounts(&self, query: &str) -> Result<Vec<Account>> {
         self.get(format!("{}/api/v1/accounts/search?q={}", self.base, query))
     }
 
+    /// Returns the current Instance.
     pub fn instance(&self) -> Result<Instance> {
         self.get(self.route("/api/v1/instance"))
     }
