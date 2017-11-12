@@ -623,6 +623,6 @@ mod tests {
             headers: Headers::new()
         };
         let invalid = invalid_test.get::<Account>("test".into()).unwrap_err();
-        assert_eq!(format!("{:?}", invalid), "Serde(ErrorImpl { code: Message(\"missing field `id`\"), line: 1, column: 20 })");
+        assert_eq!(format!("{:?}", invalid), "Serde(ErrorImpl { code: Message(\"missing field `acct`\"), line: 1, column: 20 })");
     }
 }
