@@ -74,3 +74,64 @@ mod string_or_int {
         }
     }
 }
+
+mod tests {
+    extern crate serde_json as json;
+    use entities::account::Account;
+
+    #[test]
+    fn account_valid_int_id() {
+        let account_json = r#" {
+            "id": "123456",
+            "username": "example",
+            "acct": "example",
+            "display_name": "example",
+            "locked": false,
+            "created_at": "2017-01-01T21:04:21.054Z",
+            "note": "\u003cp\u003esome info \u003ca href=\"https://example.com/tags/rustlang\" class=\"mention hashtag\" rel=\"tag\"\u003e#\u003cspan\u003erustlang\u003c/span\u003e\u003c/a\u003e\u003c/p\u003e",
+            "url": "https://example.com/@example",
+            "avatar": "https://files.example.com/accounts/avatars/000/028/407/original/abcdef.png",
+            "avatar_static": "https://files.example.com/accounts/avatars/000/028/407/original/1234.png",
+            "header": "https://example.com/headers/original/missing.png",
+            "header_static": "https://example.com/headers/original/missing.png",
+            "followers_count": 25,
+            "following_count": 44,
+            "statuses_count": 33,
+            "source": {
+                "privacy": "public",
+                "sensitive": false,
+                "note": "some note"
+            }
+        } "#;
+        let account: Account = json::from_str(account_json).unwrap();
+        assert_eq!(account.id, 123456);
+    }
+
+    #[test]
+    fn account_valid_string_id() {
+        let account_json = r#" {
+            "id": 123456,
+            "username": "example",
+            "acct": "example",
+            "display_name": "example",
+            "locked": false,
+            "created_at": "2017-01-01T21:04:21.054Z",
+            "note": "\u003cp\u003esome info \u003ca href=\"https://example.com/tags/rustlang\" class=\"mention hashtag\" rel=\"tag\"\u003e#\u003cspan\u003erustlang\u003c/span\u003e\u003c/a\u003e\u003c/p\u003e",
+            "url": "https://example.com/@example",
+            "avatar": "https://files.example.com/accounts/avatars/000/028/407/original/abcdef.png",
+            "avatar_static": "https://files.example.com/accounts/avatars/000/028/407/original/1234.png",
+            "header": "https://example.com/headers/original/missing.png",
+            "header_static": "https://example.com/headers/original/missing.png",
+            "followers_count": 25,
+            "following_count": 44,
+            "statuses_count": 33,
+            "source": {
+                "privacy": "public",
+                "sensitive": false,
+                "note": "some note"
+            }
+        } "#;
+        let account: Account = json::from_str(account_json).unwrap();
+        assert_eq!(account.id, 123456);
+    }
+}
