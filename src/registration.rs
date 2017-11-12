@@ -27,6 +27,10 @@ struct AccessToken {
 }
 
 impl Registration {
+    /// Construct a new registration process to the instance of the `base` url.
+    /// ```
+    /// let registration = Registration::new("https://mastodon.social");
+    /// ```
     pub fn new<I: Into<String>>(base: I) -> Self {
         Registration {
             base: base.into(),
@@ -107,6 +111,8 @@ impl Registration {
         }
     }
 
+    /// Create an access token from the client id, client secret, and code
+    /// provided by the authorisation url.
     pub fn create_access_token(self, code: String) -> Result<Mastodon> {
         self.is_registered()?;
         let url = format!(

@@ -21,7 +21,7 @@ fn run() -> mammut::Result<()> {
         website: None,
     };
 
-    let mut registration = Registration::new("https://mastodon.social")?;
+    let mut registration = Registration::new("https://mastodon.social");
     registration.register(app)?;
     let url = registration.authorise()?;
     // Here you now need to open the url in the browser
