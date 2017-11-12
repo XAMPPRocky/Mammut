@@ -27,8 +27,8 @@ pub struct Account {
     /// The ID of the account.
     // The ID is transmitted as string type, but it is really an integer.
     // Convert it with code copied from
-    // https://github.com/serde-rs/json/issues/329#issuecomment-305608405
-    #[serde(with = "string")]
+    // https://github.com/serde-rs/json/issues/329#issuecomment-343535627
+    #[serde(with = "string_or_int")]
     pub id: u64,
     /// Boolean for when the account cannot be followed without waiting for
     /// approval first.
@@ -43,28 +43,34 @@ pub struct Account {
     pub username: String,
 }
 
-mod string {
-    use std::fmt::Display;
-    use std::str::FromStr;
+// Accept String or u64 from JSON.
+mod string_or_int {
+    use std::fmt;
 
     use serde::{de, Deserialize, Deserializer, Serializer};
 
     pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
-        T: Display,
+        T: fmt::Display,
         S: Serializer,
     {
         serializer.collect_str(value)
     }
 
-    pub fn deserialize<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
     where
-        T: FromStr,
-        T::Err: Display,
         D: Deserializer<'de>,
     {
-        String::deserialize(deserializer)?
-            .parse()
-            .map_err(de::Error::custom)
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum StringOrInt {
+            String(String),
+            Int(u64),
+        }
+
+        match StringOrInt::deserialize(deserializer)? {
+            StringOrInt::String(s) => s.parse().map_err(de::Error::custom),
+            StringOrInt::Int(i) => Ok(i),
+        }
     }
 }
