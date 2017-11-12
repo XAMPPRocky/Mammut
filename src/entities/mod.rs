@@ -26,5 +26,38 @@ pub mod prelude {
     pub use super::relationship::Relationship;
     pub use super::report::Report;
     pub use super::search_result::SearchResult;
-    pub use super::status::{Status, Application};
+    pub use super::status::{Application, Status};
+}
+
+// Accept String or u64 from JSON.
+#[allow(dead_code)]
+mod string_or_int {
+    use std::fmt;
+
+    use serde::{de, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        T: fmt::Display,
+        S: Serializer,
+    {
+        serializer.collect_str(value)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum StringOrInt {
+            String(String),
+            Int(u64),
+        }
+
+        match StringOrInt::deserialize(deserializer)? {
+            StringOrInt::String(s) => s.parse().map_err(de::Error::custom),
+            StringOrInt::Int(i) => Ok(i),
+        }
+    }
 }

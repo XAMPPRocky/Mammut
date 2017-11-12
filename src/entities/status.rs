@@ -2,13 +2,15 @@
 
 use chrono::prelude::*;
 use super::prelude::*;
+use super::string_or_int;
 use status_builder::Visibility;
 
 /// A status from the instance.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Status {
     /// The ID of the status.
-    pub id: i64,
+    #[serde(with = "string_or_int")]
+    pub id: u64,
     /// A Fediverse-unique resource ID.
     pub uri: String,
     /// URL to the status page (can be remote)
