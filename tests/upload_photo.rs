@@ -6,7 +6,10 @@ use std::env;
 use mammut::{Data, Mastodon};
 use dotenv::dotenv;
 
+// Do not run this test by default because it requires a real Mastodon
+// connection setup.
 #[test]
+#[ignore]
 fn upload_photo() {
     dotenv().ok();
     run().unwrap();
