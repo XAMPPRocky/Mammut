@@ -65,6 +65,7 @@ pub struct Mention {
     /// Equals `username` for local users, includes `@domain` for remote ones.
     pub acct: String,
     /// Account ID.
+    #[serde(with = "string_or_int")]
     pub id: u64,
 }
 
