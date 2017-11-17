@@ -40,6 +40,7 @@
 extern crate chrono;
 extern crate reqwest;
 extern crate serde;
+extern crate url;
 
 /// Registering your App
 pub mod apps;
@@ -60,6 +61,7 @@ use json::Error as SerdeError;
 use reqwest::Error as HttpError;
 use reqwest::{Client, StatusCode};
 use reqwest::header::{Authorization, Bearer, Headers};
+use url::Url;
 
 use entities::prelude::*;
 pub use status_builder::StatusBuilder;
@@ -441,26 +443,30 @@ impl Mastodon {
 
     /// Get statuses of a single account by id. Optionally only with pictures
     /// and or excluding replies.
-    pub fn statuses(&self, id: u64, only_media: bool, exclude_replies: bool)
+    pub fn statuses(&self, id: u64, only_media: bool, exclude_replies: bool, since_id: Option<u64>, max_id: Option<u64>)
         -> Result<Vec<Status>>
         {
-            let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
+            let mut params = Vec::new();
 
             if only_media {
-                url += "?only_media=1";
+                params.push(("only_media", "1".to_string()));
             }
 
             if exclude_replies {
-                url += if only_media {
-                    "&"
-                } else {
-                    "?"
-                };
-
-                url += "exclude_replies=1";
+                params.push(("exclude_replies", "1".to_string()));
             }
 
-            self.get(url)
+            if let Some(since_id) = since_id {
+                params.push(("since_id", since_id.to_string()));
+            }
+
+            if let Some(max_id) = max_id {
+                params.push(("max_id", max_id.to_string()));
+            }
+
+            let url = Url::parse_with_params(&format!("{}/api/v1/accounts/{}/statuses", self.base, id), &params).unwrap();
+
+            self.get(url.into_string())
         }
 
 
