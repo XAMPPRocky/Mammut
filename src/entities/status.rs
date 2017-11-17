@@ -3,6 +3,7 @@
 use chrono::prelude::*;
 use super::prelude::*;
 use super::string_or_int;
+use super::option_string_or_int;
 use status_builder::Visibility;
 
 /// A status from the instance.
@@ -19,9 +20,11 @@ pub struct Status {
     pub account: Account,
     /// The ID of the status this status is replying to, if the status is
     /// a reply.
+    #[serde(with = "option_string_or_int")]
     pub in_reply_to_id: Option<u64>,
     /// The ID of the account this status is replying to, if the status is
     /// a reply.
+    #[serde(with = "option_string_or_int")]
     pub in_reply_to_account_id: Option<u64>,
     /// If this status is a reblogged Status of another User.
     pub reblog: Option<Box<Status>>,

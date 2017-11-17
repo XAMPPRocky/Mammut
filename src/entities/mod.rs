@@ -61,3 +61,44 @@ mod string_or_int {
         }
     }
 }
+
+// Accept String or u64 or null from JSON.
+#[allow(dead_code)]
+mod option_string_or_int {
+    use std::fmt;
+
+    use serde::{de, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        T: fmt::Display,
+        S: Serializer,
+    {
+        serializer.collect_str(value)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum StringOrIntOrNull {
+            String(String),
+            Int(u64),
+            None,
+        }
+
+        match StringOrIntOrNull::deserialize(deserializer)? {
+            StringOrIntOrNull::String(s) => {
+                let parsed: Result<u64, _> = s.parse().map_err(de::Error::custom);
+                match parsed {
+                    Ok(value) => Ok(Some(value)),
+                    Err(error) => Err(error),
+                }
+            }
+            StringOrIntOrNull::Int(i) => Ok(Some(i)),
+            StringOrIntOrNull::None => Ok(None),
+        }
+    }
+}
