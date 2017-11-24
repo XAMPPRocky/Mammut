@@ -469,6 +469,17 @@ impl Mastodon {
             self.get(url.into_string())
         }
 
+    /// Get favourited statuses of the current account. Done with a pager
+    /// because max_id and since_id parameters refer to internal Mastodon fav
+    /// IDs that are only available in the Link response header.
+    pub fn favourites(&self) -> FavoritesPager
+        {
+            FavoritesPager {
+                mastodon: self,
+                next_link: Some(format!("{}/api/v1/favourites", self.base)),
+            }
+        }
+
 
     /// Returns the client account's relationship to a list of other accounts.
     /// Such as whether they follow them or vice versa.
@@ -537,6 +548,62 @@ from! {
     SerdeError, Serde,
     HttpError, Http,
     IoError, Io,
+}
+
+pub struct FavoritesPager<'a> {
+    next_link: Option<String>,
+    mastodon: &'a Mastodon,
+}
+
+impl<'a> FavoritesPager<'a> {
+
+    /// Get the next round of favourited statuses. Call this multiple times
+    /// until the returned list is empty.
+    pub fn next(&mut self) -> Result<Vec<Status>> {
+        use std::io::Read;
+        use reqwest::header::Link;
+        use reqwest::header::RelationType;
+
+        let url = match self.next_link {
+            // If there is no next link then there are no favs left - return an
+            // empty list immediately.
+            None => return Ok(vec!()),
+            Some(ref link) => link.clone(),
+        };
+
+        let mut response = self.mastodon.client.get(&url)
+            .headers(self.mastodon.headers.clone())
+            .send()?;
+
+        let mut vec = Vec::new();
+        response.read_to_end(&mut vec)?;
+
+        let statuses: Vec<Status> = match json::from_slice(&vec) {
+            Ok(t) => t,
+            // If deserializing into the desired type fails try again to
+            // see if this is an error response.
+            Err(e) => {
+                if let Ok(error) = json::from_slice(&vec) {
+                    return Err(Error::Api(error));
+                }
+                return Err(e.into());
+            },
+        };
+        self.next_link = None;
+        // Store the next link header for the next round of favs.
+        if let Some(link_header) = response.headers().get::<Link>() {
+            for value in link_header.values() {
+                if let Some(relations) = value.rel() {
+                    for relation in relations {
+                        if relation == &RelationType::Next {
+                            self.next_link = Some(value.link().to_string());
+                        }
+                    }
+                }
+            }
+        }
+        Ok(statuses)
+    }
 }
 
 #[cfg(test)]
