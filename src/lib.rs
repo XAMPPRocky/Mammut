@@ -58,7 +58,7 @@ use std::ops;
 
 use json::Error as SerdeError;
 use reqwest::Error as HttpError;
-use reqwest::{Client, StatusCode};
+use reqwest::{Client, Response, StatusCode};
 use reqwest::header::{Authorization, Bearer, Headers};
 
 use entities::prelude::*;
@@ -74,26 +74,11 @@ macro_rules! methods {
             fn $method<T: for<'de> serde::Deserialize<'de>>(&self, url: String)
             -> Result<T>
             {
-                use std::io::Read;
-
-                let mut response = self.client.$method(&url)
+                let response = self.client.$method(&url)
                     .headers(self.headers.clone())
                     .send()?;
 
-                let mut vec = Vec::new();
-                response.read_to_end(&mut vec)?;
-
-                match json::from_slice(&vec) {
-                    Ok(t) => Ok(t),
-                    // If deserializing into the desired type fails try again to
-                    // see if this is an error response.
-                    Err(e) => {
-                        if let Ok(error) = json::from_slice(&vec) {
-                            return Err(Error::Api(error));
-                        }
-                        Err(e.into())
-                    },
-                }
+                json_convert_response(response)
             }
          )+
     };
@@ -109,7 +94,6 @@ macro_rules! route {
         #[doc = "# Errors"]
         /// If `access_token` is not set.
         pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
-            use std::io::Read;
             use reqwest::multipart::Form;
 
             let form_data = Form::new()
@@ -117,7 +101,7 @@ macro_rules! route {
                 .file(stringify!($param), $param.as_ref())?
             )*;
 
-            let mut response = self.client.post(&self.route(concat!("/api/v1/", $url)))
+            let response = self.client.post(&self.route(concat!("/api/v1/", $url)))
                 .headers(self.headers.clone())
                 .multipart(form_data)
                 .send()?;
@@ -130,15 +114,7 @@ macro_rules! route {
                 return Err(Error::Server(status));
             }
 
-            let mut vec = Vec::new();
-
-            response.read_to_end(&mut vec)?;
-
-
-            match json::from_slice::<$ret>(&vec) {
-                Ok(res) => Ok(res),
-                Err(_) => Err(Error::Api(json::from_slice(&vec)?)),
-            }
+            json_convert_response(response)
         }
 
         route!{$($rest)*}
@@ -152,7 +128,6 @@ macro_rules! route {
         #[doc = "# Errors"]
         /// If `access_token` is not set.
         pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
-            use std::io::Read;
 
             let form_data = json!({
                 $(
@@ -160,7 +135,7 @@ macro_rules! route {
                 )*
             });
 
-            let mut response = self.client.post(&self.route(concat!("/api/v1/", $url)))
+            let response = self.client.post(&self.route(concat!("/api/v1/", $url)))
                 .headers(self.headers.clone())
                 .json(&form_data)
                 .send()?;
@@ -173,14 +148,7 @@ macro_rules! route {
                 return Err(Error::Server(status));
             }
 
-            let mut vec = Vec::new();
-
-            response.read_to_end(&mut vec)?;
-
-            match json::from_slice(&vec) {
-                Ok(res) => Ok(res),
-                Err(_) => Err(Error::Api(json::from_slice(&vec)?)),
-            }
+            json_convert_response(response)
         }
 
         route!{$($rest)*}
@@ -398,21 +366,13 @@ impl Mastodon {
 
     /// Post a new status to the account.
     pub fn new_status(&self, status: StatusBuilder) -> Result<Status> {
-        use std::io::Read;
 
-        let mut response = self.client.post(&self.route("/api/v1/statuses"))
+        let response = self.client.post(&self.route("/api/v1/statuses"))
             .headers(self.headers.clone())
             .json(&status)
             .send()?;
 
-        let mut vec = Vec::new();
-        response.read_to_end(&mut vec)?;
-
-        if let Ok(t) = json::from_slice(&vec) {
-            Ok(t)
-        } else {
-            Err(Error::Api(json::from_slice(&vec)?))
-        }
+        json_convert_response(response)
     }
 
     /// Get the federated timeline for the instance.
@@ -533,96 +493,23 @@ from! {
     IoError, Io,
 }
 
-#[cfg(test)]
-#[allow(unused_imports, unused_variables, unused_mut, dead_code)]
-mod tests {
-     use super::*;
-     use reqwest::IntoUrl;
-     use reqwest::header::Headers;
+// Convert the HTTP response body from JSON. Pass up deserialization errors
+// transparently.
+fn json_convert_response<T: for<'de> serde::Deserialize<'de>>(mut response: Response) -> Result<T> {
+    use std::io::Read;
 
-    // Tests that the returned error types are correct.
-    #[test]
-    fn request_errors() {
-        struct ClientMock<'a> {
-            json: &'a str,
-        }
-        impl<'a> ClientMock<'a> {
-            fn get<U: IntoUrl>(&self, url: U) -> &ClientMock {
-                self
+    let mut vec = Vec::new();
+    response.read_to_end(&mut vec)?;
+
+    match json::from_slice(&vec) {
+        Ok(t) => Ok(t),
+        // If deserializing into the desired type fails try again to
+        // see if this is an error response.
+        Err(e) => {
+            if let Ok(error) = json::from_slice(&vec) {
+                return Err(Error::Api(error));
             }
-            fn headers(&self, headers: Headers) -> &ClientMock {
-                self
-            }
-            fn send(&self) -> Result<ResponseMock> {
-                Ok(ResponseMock{ json: self.json})
-            }
-        }
-        struct ResponseMock<'a> {
-            json: &'a str,
-        }
-        impl<'a> ResponseMock<'a> {
-            fn read_to_end(mut self, buf: &mut Vec<u8>) -> Result<usize> {
-                buf.extend_from_slice(self.json.as_bytes());
-                Ok(5)
-            }
-        }
-
-        struct MastodonTest<'a> {
-            client: ClientMock<'a>,
-            headers: Headers,
-        }
-        impl<'a> MastodonTest<'a> {
-            methods![get,];
-        }
-
-        let account_test = MastodonTest{
-            client: ClientMock{
-                json: r#" {
-                    "id": 123456,
-                    "username": "example",
-                    "acct": "example",
-                    "display_name": "example",
-                    "locked": false,
-                    "created_at": "2017-01-01T21:04:21.054Z",
-                    "note": "\u003cp\u003esome info \u003ca href=\"https://example.com/tags/rustlang\" class=\"mention hashtag\" rel=\"tag\"\u003e#\u003cspan\u003erustlang\u003c/span\u003e\u003c/a\u003e\u003c/p\u003e",
-                    "url": "https://example.com/@example",
-                    "avatar": "https://files.example.com/accounts/avatars/000/028/407/original/abcdef.png",
-                    "avatar_static": "https://files.example.com/accounts/avatars/000/028/407/original/1234.png",
-                    "header": "https://example.com/headers/original/missing.png",
-                    "header_static": "https://example.com/headers/original/missing.png",
-                    "followers_count": 25,
-                    "following_count": 44,
-                    "statuses_count": 33,
-                    "source": {
-                        "privacy": "public",
-                        "sensitive": false,
-                        "note": "some note"
-                    }
-                } "#,
-            },
-            headers: Headers::new()
-        };
-        let account = account_test.get::<Account>("test".into()).unwrap();
-        assert_eq!(account.id, 123456);
-
-        let error_test = MastodonTest{
-            client: ClientMock{
-                json: r#" {
-                    "error": "example error description"
-                } "#,
-            },
-            headers: Headers::new()
-        };
-        let error = error_test.get::<Account>("test".into()).unwrap_err();
-        assert_eq!(format!("{:?}", error), "Api(ApiError { error: \"example error description\", error_description: None })");
-
-        let invalid_test = MastodonTest{
-            client: ClientMock{
-                json: r#" { "invalid": true } "#,
-            },
-            headers: Headers::new()
-        };
-        let invalid = invalid_test.get::<Account>("test".into()).unwrap_err();
-        assert_eq!(format!("{:?}", invalid), "Serde(ErrorImpl { code: Message(\"missing field `acct`\"), line: 1, column: 20 })");
+            Err(e.into())
+        },
     }
 }
