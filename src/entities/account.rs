@@ -1,7 +1,7 @@
-#![allow(dead_code)]
 //! A module containing everything relating to a account returned from the api.
 
 use chrono::prelude::*;
+use super::string_or_int;
 
 /// A struct representing an Account.
 #[derive(Debug, Clone, Deserialize)]
@@ -41,38 +41,6 @@ pub struct Account {
     pub url: String,
     /// The username of the account.
     pub username: String,
-}
-
-// Accept String or u64 from JSON.
-mod string_or_int {
-    use std::fmt;
-
-    use serde::{de, Deserialize, Deserializer, Serializer};
-
-    pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        T: fmt::Display,
-        S: Serializer,
-    {
-        serializer.collect_str(value)
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum StringOrInt {
-            String(String),
-            Int(u64),
-        }
-
-        match StringOrInt::deserialize(deserializer)? {
-            StringOrInt::String(s) => s.parse().map_err(de::Error::custom),
-            StringOrInt::Int(i) => Ok(i),
-        }
-    }
 }
 
 mod tests {
