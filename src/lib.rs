@@ -226,7 +226,7 @@ pub struct Mastodon {
 
 /// Raw data about mastodon app. Save `Data` using `serde` to prevent needing
 /// to authenticate on every run.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Data {
     /// Base url of instance eg. `https://mastodon.social`.
     pub base: Cow<'static, str>,
