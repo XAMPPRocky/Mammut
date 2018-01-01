@@ -8,7 +8,7 @@ use super::status::Status;
 #[derive(Debug, Clone, Deserialize)]
 pub struct Notification {
     /// The notification ID.
-    pub id: u64,
+    pub id: String,
     /// The type of notification.
     #[serde(rename = "type")]
     pub notification_type: NotificationType,

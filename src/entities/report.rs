@@ -4,7 +4,7 @@
 #[derive(Debug, Clone, Deserialize)]
 pub struct Report {
     /// The ID of the report.
-    pub id: u64,
+    pub id: String,
     /// The action taken in response to the report.
     pub action_taken: String,
 }
