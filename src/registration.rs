@@ -56,7 +56,7 @@ impl Registration {
     /// let app = AppBuilder {
     ///     client_name: "mammut_test",
     ///     redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
-    ///     scope: Scope::Read,
+    ///     scopes: Scopes::Read,
     ///     website: None,
     /// };
     ///
