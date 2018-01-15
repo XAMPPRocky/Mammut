@@ -18,7 +18,7 @@ pub struct AppBuilder<'a> {
     /// (for no redirect, use `urn:ietf:wg:oauth:2.0:oob`)
     pub redirect_uris: &'a str,
     /// Permission scope of the application.
-    pub scopes: Scope,
+    pub scopes: Scopes,
     /// URL to the homepage of your application.
     #[serde(skip_serializing_if="Option::is_none")]
     pub website: Option<&'a str>,
@@ -27,7 +27,7 @@ pub struct AppBuilder<'a> {
 /// Permission scope of the application.
 /// [Details on what each permission provides](//github.com/tootsuite/documentation/blob/master/Using-the-API/OAuth-details.md)
 #[derive(Debug, Clone, Copy, Serialize)]
-pub enum Scope {
+pub enum Scopes {
     /// All Permissions, equivalent to `read write follow`
     #[serde(rename = "read write follow")]
     All,
@@ -51,23 +51,23 @@ pub enum Scope {
     WriteFollow,
 }
 
-impl fmt::Display for Scope {
+impl fmt::Display for Scopes {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Scope::*;
+        use self::Scopes::*;
         write!(f, "{}", match *self {
-            All => "read write follow",
+            All => "read%20write%20follow",
             Follow => "follow",
             Read => "read",
-            ReadFollow => "read follow",
-            ReadWrite => "read write",
+            ReadFollow => "read%20follow",
+            ReadWrite => "read%20write",
             Write => "write",
-            WriteFollow => "write follow"
+            WriteFollow => "write%20follow"
         })
     }
 }
 
-impl Default for Scope {
+impl Default for Scopes {
     fn default() -> Self {
-        Scope::Read
+        Scopes::Read
     }
 }
