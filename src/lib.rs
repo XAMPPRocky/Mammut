@@ -10,7 +10,7 @@
 //! # }
 //! # fn try() -> mammut::Result<()> {
 //! use mammut::Registration;
-//! use mammut::apps::{AppBuilder, Scope};
+//! use mammut::apps::{AppBuilder, Scopes};
 //!
 //! let app = AppBuilder {
 //!     client_name: "mammut_test",
