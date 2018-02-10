@@ -10,12 +10,12 @@
 //! # }
 //! # fn try() -> mammut::Result<()> {
 //! use mammut::Registration;
-//! use mammut::apps::{AppBuilder, Scope};
+//! use mammut::apps::{AppBuilder, Scopes};
 //!
 //! let app = AppBuilder {
 //!     client_name: "mammut_test",
 //!     redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
-//!     scopes: Scope::Read,
+//!     scopes: Scopes::Read,
 //!     website: None,
 //! };
 //!

@@ -12,7 +12,7 @@ pub struct Status {
     /// A Fediverse-unique resource ID.
     pub uri: String,
     /// URL to the status page (can be remote)
-    pub url: String,
+    pub url: Option<String>,
     /// The Account which posted the status.
     pub account: Account,
     /// The ID of the status this status is replying to, if the status is

@@ -1,7 +1,7 @@
 use reqwest::Client;
 
 use super::{Error, Mastodon, Result};
-use apps::{AppBuilder, Scope};
+use apps::{AppBuilder, Scopes};
 
 /// Handles registering your mastodon app to your instance. It is recommended
 /// you cache your data struct to avoid registering on every run.
@@ -11,7 +11,7 @@ pub struct Registration {
     client_id: Option<String>,
     client_secret: Option<String>,
     redirect: Option<String>,
-    scopes: Scope,
+    scopes: Scopes,
 }
 
 #[derive(Deserialize)]
@@ -38,7 +38,7 @@ impl Registration {
             client_id: None,
             client_secret: None,
             redirect: None,
-            scopes: Scope::Read,
+            scopes: Scopes::Read,
         }
     }
 
@@ -51,12 +51,12 @@ impl Registration {
     /// # }
     /// # fn try() -> mammut::Result<()> {
     /// use mammut::Registration;
-    /// use mammut::apps::{AppBuilder, Scope};
+    /// use mammut::apps::{AppBuilder, Scopes};
     ///
     /// let app = AppBuilder {
     ///     client_name: "mammut_test",
     ///     redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
-    ///     scopes: Scope::Read,
+    ///     scopes: Scopes::Read,
     ///     website: None,
     /// };
     ///
@@ -75,7 +75,6 @@ impl Registration {
     pub fn register(&mut self, app_builder: AppBuilder) -> Result<()> {
         let url = format!("{}/api/v1/apps", self.base);
         self.scopes = app_builder.scopes;
-
         let app: OAuth = self.client.post(&url).form(&app_builder).send()?.json()?;
 
         self.client_id = Some(app.client_id);
