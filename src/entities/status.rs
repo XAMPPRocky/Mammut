@@ -2,13 +2,16 @@
 
 use chrono::prelude::*;
 use super::prelude::*;
+use super::string_or_int;
+use super::option_string_or_int;
 use status_builder::Visibility;
 
 /// A status from the instance.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Status {
     /// The ID of the status.
-    pub id: i64,
+    #[serde(with = "string_or_int")]
+    pub id: u64,
     /// A Fediverse-unique resource ID.
     pub uri: String,
     /// URL to the status page (can be remote)
@@ -17,9 +20,11 @@ pub struct Status {
     pub account: Account,
     /// The ID of the status this status is replying to, if the status is
     /// a reply.
+    #[serde(with = "option_string_or_int")]
     pub in_reply_to_id: Option<u64>,
     /// The ID of the account this status is replying to, if the status is
     /// a reply.
+    #[serde(with = "option_string_or_int")]
     pub in_reply_to_account_id: Option<u64>,
     /// If this status is a reblogged Status of another User.
     pub reblog: Option<Box<Status>>,
@@ -63,6 +68,7 @@ pub struct Mention {
     /// Equals `username` for local users, includes `@domain` for remote ones.
     pub acct: String,
     /// Account ID.
+    #[serde(with = "string_or_int")]
     pub id: u64,
 }
 
