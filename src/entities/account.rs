@@ -24,7 +24,7 @@ pub struct Account {
     /// URL to the header static image (gif).
     pub header_static: String,
     /// The ID of the account.
-    pub id: u64,
+    pub id: String,
     /// Boolean for when the account cannot be followed without waiting for
     /// approval first.
     pub locked: bool,
