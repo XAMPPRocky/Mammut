@@ -58,7 +58,7 @@ use std::ops;
 
 use json::Error as SerdeError;
 use reqwest::Error as HttpError;
-use reqwest::{Client, StatusCode};
+use reqwest::{Client, Response, StatusCode};
 use reqwest::header::{Authorization, Bearer, Headers};
 
 use entities::prelude::*;
@@ -74,20 +74,11 @@ macro_rules! methods {
             fn $method<T: for<'de> serde::Deserialize<'de>>(&self, url: String)
             -> Result<T>
             {
-                use std::io::Read;
-
-                let mut response = self.client.$method(&url)
+                let response = self.client.$method(&url)
                     .headers(self.headers.clone())
                     .send()?;
 
-                let mut vec = Vec::new();
-                response.read_to_end(&mut vec)?;
-
-                if let Ok(t) = json::from_slice(&vec) {
-                    Ok(t)
-                } else {
-                    Err(Error::Api(json::from_slice(&vec)?))
-                }
+                json_convert_response(response)
             }
          )+
     };
@@ -103,7 +94,6 @@ macro_rules! route {
         #[doc = "# Errors"]
         /// If `access_token` is not set.
         pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
-            use std::io::Read;
             use reqwest::multipart::Form;
 
             let form_data = Form::new()
@@ -111,7 +101,7 @@ macro_rules! route {
                 .file(stringify!($param), $param.as_ref())?
             )*;
 
-            let mut response = self.client.post(&self.route(concat!("/api/v1/", $url)))
+            let response = self.client.post(&self.route(concat!("/api/v1/", $url)))
                 .headers(self.headers.clone())
                 .multipart(form_data)
                 .send()?;
@@ -124,15 +114,7 @@ macro_rules! route {
                 return Err(Error::Server(status));
             }
 
-            let mut vec = Vec::new();
-
-            response.read_to_end(&mut vec)?;
-
-
-            match json::from_slice::<$ret>(&vec) {
-                Ok(res) => Ok(res),
-                Err(_) => Err(Error::Api(json::from_slice(&vec)?)),
-            }
+            json_convert_response(response)
         }
 
         route!{$($rest)*}
@@ -146,7 +128,6 @@ macro_rules! route {
         #[doc = "# Errors"]
         /// If `access_token` is not set.
         pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
-            use std::io::Read;
 
             let form_data = json!({
                 $(
@@ -154,7 +135,7 @@ macro_rules! route {
                 )*
             });
 
-            let mut response = self.client.post(&self.route(concat!("/api/v1/", $url)))
+            let response = self.client.post(&self.route(concat!("/api/v1/", $url)))
                 .headers(self.headers.clone())
                 .json(&form_data)
                 .send()?;
@@ -167,14 +148,7 @@ macro_rules! route {
                 return Err(Error::Server(status));
             }
 
-            let mut vec = Vec::new();
-
-            response.read_to_end(&mut vec)?;
-
-            match json::from_slice(&vec) {
-                Ok(res) => Ok(res),
-                Err(_) => Err(Error::Api(json::from_slice(&vec)?)),
-            }
+            json_convert_response(response)
         }
 
         route!{$($rest)*}
@@ -392,21 +366,13 @@ impl Mastodon {
 
     /// Post a new status to the account.
     pub fn new_status(&self, status: StatusBuilder) -> Result<Status> {
-        use std::io::Read;
 
-        let mut response = self.client.post(&self.route("/api/v1/statuses"))
+        let response = self.client.post(&self.route("/api/v1/statuses"))
             .headers(self.headers.clone())
             .json(&status)
             .send()?;
 
-        let mut vec = Vec::new();
-        response.read_to_end(&mut vec)?;
-
-        if let Ok(t) = json::from_slice(&vec) {
-            Ok(t)
-        } else {
-            Err(Error::Api(json::from_slice(&vec)?))
-        }
+        json_convert_response(response)
     }
 
     /// Get the federated timeline for the instance.
@@ -525,4 +491,25 @@ from! {
     SerdeError, Serde,
     HttpError, Http,
     IoError, Io,
+}
+
+// Convert the HTTP response body from JSON. Pass up deserialization errors
+// transparently.
+fn json_convert_response<T: for<'de> serde::Deserialize<'de>>(mut response: Response) -> Result<T> {
+    use std::io::Read;
+
+    let mut vec = Vec::new();
+    response.read_to_end(&mut vec)?;
+
+    match json::from_slice(&vec) {
+        Ok(t) => Ok(t),
+        // If deserializing into the desired type fails try again to
+        // see if this is an error response.
+        Err(e) => {
+            if let Ok(error) = json::from_slice(&vec) {
+                return Err(Error::Api(error));
+            }
+            Err(e.into())
+        },
+    }
 }
