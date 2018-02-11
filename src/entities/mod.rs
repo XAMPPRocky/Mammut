@@ -26,5 +26,5 @@ pub mod prelude {
     pub use super::relationship::Relationship;
     pub use super::report::Report;
     pub use super::search_result::SearchResult;
-    pub use super::status::{Application, Status};
+    pub use super::status::{Status, Application};
 }

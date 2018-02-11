@@ -94,7 +94,7 @@ impl Registration {
             self.base,
             self.client_id.clone().unwrap(),
             self.redirect.clone().unwrap(),
-            self.scopes.to_string().replace(" ", "%20"),
+            self.scopes,
         );
 
         Ok(url)

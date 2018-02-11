@@ -2,8 +2,6 @@
 
 use chrono::prelude::*;
 use super::prelude::*;
-use super::string_or_int;
-use super::option_string_or_int;
 use status_builder::Visibility;
 
 /// A status from the instance.
