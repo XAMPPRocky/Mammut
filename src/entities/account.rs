@@ -1,7 +1,6 @@
 //! A module containing everything relating to a account returned from the api.
 
 use chrono::prelude::*;
-use super::string_or_int;
 
 /// A struct representing an Account.
 #[derive(Debug, Clone, Deserialize)]
@@ -25,11 +24,7 @@ pub struct Account {
     /// URL to the header static image (gif).
     pub header_static: String,
     /// The ID of the account.
-    // The ID is transmitted as string type, but it is really an integer.
-    // Convert it with code copied from
-    // https://github.com/serde-rs/json/issues/329#issuecomment-343535627
-    #[serde(with = "string_or_int")]
-    pub id: u64,
+    pub id: String,
     /// Boolean for when the account cannot be followed without waiting for
     /// approval first.
     pub locked: bool,

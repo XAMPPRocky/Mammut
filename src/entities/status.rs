@@ -10,22 +10,19 @@ use status_builder::Visibility;
 #[derive(Debug, Clone, Deserialize)]
 pub struct Status {
     /// The ID of the status.
-    #[serde(with = "string_or_int")]
-    pub id: u64,
+    pub id: String,
     /// A Fediverse-unique resource ID.
     pub uri: String,
     /// URL to the status page (can be remote)
-    pub url: String,
+    pub url: Option<String>,
     /// The Account which posted the status.
     pub account: Account,
     /// The ID of the status this status is replying to, if the status is
     /// a reply.
-    #[serde(with = "option_string_or_int")]
-    pub in_reply_to_id: Option<u64>,
+    pub in_reply_to_id: Option<String>,
     /// The ID of the account this status is replying to, if the status is
     /// a reply.
-    #[serde(with = "option_string_or_int")]
-    pub in_reply_to_account_id: Option<u64>,
+    pub in_reply_to_account_id: Option<String>,
     /// If this status is a reblogged Status of another User.
     pub reblog: Option<Box<Status>>,
     /// Body of the status; this will contain HTML
@@ -68,8 +65,7 @@ pub struct Mention {
     /// Equals `username` for local users, includes `@domain` for remote ones.
     pub acct: String,
     /// Account ID.
-    #[serde(with = "string_or_int")]
-    pub id: u64,
+    pub id: String,
 }
 
 /// Hashtags in the status.
