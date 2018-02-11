@@ -40,6 +40,7 @@
 extern crate chrono;
 extern crate reqwest;
 extern crate serde;
+extern crate url;
 
 /// Registering your App
 pub mod apps;
@@ -60,6 +61,7 @@ use json::Error as SerdeError;
 use reqwest::Error as HttpError;
 use reqwest::{Client, Response, StatusCode};
 use reqwest::header::{Authorization, Bearer, Headers};
+use url::Url;
 
 use entities::prelude::*;
 pub use status_builder::StatusBuilder;
@@ -401,26 +403,41 @@ impl Mastodon {
 
     /// Get statuses of a single account by id. Optionally only with pictures
     /// and or excluding replies.
-    pub fn statuses(&self, id: u64, only_media: bool, exclude_replies: bool)
+    pub fn statuses(&self, id: u64, only_media: bool, exclude_replies: bool, since_id: Option<u64>, max_id: Option<u64>)
         -> Result<Vec<Status>>
         {
-            let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
+            let mut params = Vec::new();
 
             if only_media {
-                url += "?only_media=1";
+                params.push(("only_media", "1".to_string()));
             }
 
             if exclude_replies {
-                url += if only_media {
-                    "&"
-                } else {
-                    "?"
-                };
-
-                url += "exclude_replies=1";
+                params.push(("exclude_replies", "1".to_string()));
             }
 
-            self.get(url)
+            if let Some(since_id) = since_id {
+                params.push(("since_id", since_id.to_string()));
+            }
+
+            if let Some(max_id) = max_id {
+                params.push(("max_id", max_id.to_string()));
+            }
+
+            let url = Url::parse_with_params(&format!("{}/api/v1/accounts/{}/statuses", self.base, id), &params).unwrap();
+
+            self.get(url.into_string())
+        }
+
+    /// Get favourited statuses of the current account. Done with a pager
+    /// because max_id and since_id parameters refer to internal Mastodon fav
+    /// IDs that are only available in the Link response header.
+    pub fn favourites(&self) -> FavoritesPager
+        {
+            FavoritesPager {
+                mastodon: self,
+                next_link: Some(format!("{}/api/v1/favourites", self.base)),
+            }
         }
 
 
@@ -511,5 +528,61 @@ fn json_convert_response<T: for<'de> serde::Deserialize<'de>>(mut response: Resp
             }
             Err(e.into())
         },
+    }
+}
+
+pub struct FavoritesPager<'a> {
+    next_link: Option<String>,
+    mastodon: &'a Mastodon,
+}
+
+impl<'a> FavoritesPager<'a> {
+
+    /// Get the next round of favourited statuses. Call this multiple times
+    /// until the returned list is empty.
+    pub fn next(&mut self) -> Result<Vec<Status>> {
+        use std::io::Read;
+        use reqwest::header::Link;
+        use reqwest::header::RelationType;
+
+        let url = match self.next_link {
+            // If there is no next link then there are no favs left - return an
+            // empty list immediately.
+            None => return Ok(vec!()),
+            Some(ref link) => link.clone(),
+        };
+
+        let mut response = self.mastodon.client.get(&url)
+            .headers(self.mastodon.headers.clone())
+            .send()?;
+
+        let mut vec = Vec::new();
+        response.read_to_end(&mut vec)?;
+
+        let statuses: Vec<Status> = match json::from_slice(&vec) {
+            Ok(t) => t,
+            // If deserializing into the desired type fails try again to
+            // see if this is an error response.
+            Err(e) => {
+                if let Ok(error) = json::from_slice(&vec) {
+                    return Err(Error::Api(error));
+                }
+                return Err(e.into());
+            },
+        };
+        self.next_link = None;
+        // Store the next link header for the next round of favs.
+        if let Some(link_header) = response.headers().get::<Link>() {
+            for value in link_header.values() {
+                if let Some(relations) = value.rel() {
+                    for relation in relations {
+                        if relation == &RelationType::Next {
+                            self.next_link = Some(value.link().to_string());
+                        }
+                    }
+                }
+            }
+        }
+        Ok(statuses)
     }
 }
