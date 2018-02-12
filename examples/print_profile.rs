@@ -1,10 +1,12 @@
 extern crate mammut;
 extern crate toml;
-use mammut::{Data, Mastodon, Registration};
-use mammut::apps::{AppBuilder, Scopes};
+
 use std::io;
 use std::fs::File;
 use std::io::prelude::*;
+
+use mammut::{Data, Mastodon, Registration};
+use mammut::apps::{AppBuilder, Scopes};
 
 fn main() {
     let mastodon = match File::open("mastodon-data.toml") {

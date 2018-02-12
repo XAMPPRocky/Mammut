@@ -6,30 +6,57 @@ A wrapper around the [API](https://github.com/tootsuite/mastodon/blob/master/doc
 
 ```rust
 extern crate mammut;
-use mammut::Registration;
-use mammut::apps::{AppBuilder, Scope};
+extern crate toml;
+
+use std::io;
+use std::fs::File;
+use std::io::prelude::*;
+
+use mammut::{Data, Mastodon, Registration};
+use mammut::apps::{AppBuilder, Scopes};
 
 fn main() {
-   run().unwrap();
+    let mastodon = match File::open("mastodon-data.toml") {
+        Ok(mut file) => {
+            let mut config = String::new();
+            file.read_to_string(&mut config).unwrap();
+            let data: Data = toml::from_str(&config).unwrap();
+            Mastodon::from_data(data)
+        },
+        Err(_) => register(),
+    };
+
+    let you = mastodon.verify_credentials().unwrap();
+
+    println!("{:#?}", you);
 }
 
-fn run() -> mammut::Result<()> {
+fn register() -> Mastodon {
     let app = AppBuilder {
-        client_name: "mammut_test",
+        client_name: "mammut-examples",
         redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
         scopes: Scopes::Read,
-        website: None,
+        website: Some("https://github.com/Aaronepower/mammut"),
     };
 
     let mut registration = Registration::new("https://mastodon.social");
-    registration.register(app)?;
-    let url = registration.authorise()?;
-    // Here you now need to open the url in the browser
-    // And handle a the redirect url coming back with the code.
-    let code = String::from("RETURNED_FROM_BROWSER");
-    let mastodon = registration.create_access_token(code)?;
+    registration.register(app).unwrap();;
+    let url = registration.authorise().unwrap();
 
-    println!("{:?}", mastodon.get_home_timeline()?);
-    Ok(())
+    println!("Click this link to authorize on Mastodon: {}", url);
+    println!("Paste the returned authorization code: ");
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+
+    let code = input.trim();
+    let mastodon = registration.create_access_token(code.to_string()).unwrap();
+
+    // Save app data for using on the next run.
+    let toml = toml::to_string(&*mastodon).unwrap();
+    let mut file = File::create("mastodon-data.toml").unwrap();
+    file.write_all(toml.as_bytes()).unwrap();
+
+    mastodon
 }
 ```
