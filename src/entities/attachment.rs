@@ -1,4 +1,6 @@
 //! Module containing everything related to media attachements.
+use serde::{Deserialize, Deserializer};
+use super::Empty;
 
 /// A struct representing a media attachment.
 #[derive(Debug, Clone, Deserialize)]
@@ -18,9 +20,26 @@ pub struct Attachment {
     /// (only present on local images)
     pub text_url: Option<String>,
     /// Meta information about the attachment.
+    #[serde(deserialize_with="empty_as_none")]
     pub meta: Option<Meta>,
     /// Noop will be removed.
     pub description: Option<String>,
+}
+
+fn empty_as_none<'de, D: Deserializer<'de>>(val: D)
+    -> Result<Option<Meta>, D::Error>
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum EmptyOrMeta {
+        Empty(Empty),
+        Meta(Meta),
+    }
+
+    Ok(match EmptyOrMeta::deserialize(val)? {
+        EmptyOrMeta::Empty(_) => None,
+        EmptyOrMeta::Meta(m) => Some(m),
+    })
 }
 
 /// Information about the attachment itself.

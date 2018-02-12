@@ -4,6 +4,8 @@
 /// A struct containing information about a relationship with another account.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Relationship {
+    /// Target account id
+    pub id: String,
     /// Whether the application client follows the account.
     pub following: bool,
     /// Whether the account follows the application client.
@@ -14,4 +16,8 @@ pub struct Relationship {
     pub muting: bool,
     /// Whether the application client has requested to follow the account.
     pub requested: bool,
+    /// Whether the user is also muting notifications
+    pub muting_notifications: bool,
+    /// Whether the user is currently blocking the accounts's domain
+    pub domain_blocking: bool,
 }

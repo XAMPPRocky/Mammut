@@ -12,4 +12,8 @@ pub struct Instance {
     /// An email address which can be used to contact the
     /// instance administrator.
     pub email: String,
+    /// The Mastodon version used by instance.
+    pub version: String,
+    /// `streaming_api`
+    pub urls: Vec<String>,
 }

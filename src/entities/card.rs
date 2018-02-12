@@ -10,5 +10,19 @@ pub struct Card {
     /// The card description.
     pub description: String,
     /// The image associated with the card, if any.
-    pub image: String,
+    pub image: Option<String>,
+    /// OEmbed data
+    author_name: Option<String>,
+    /// OEmbed data
+    author_url: Option<String>,
+    /// OEmbed data
+    provider_name: Option<String>,
+    /// OEmbed data
+    provider_url: Option<String>,
+    /// OEmbed data
+    html: Option<String>,
+    /// OEmbed data
+    width: Option<String>,
+    /// OEmbed data
+    height: Option<String>,
 }

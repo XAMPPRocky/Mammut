@@ -40,6 +40,7 @@
 extern crate chrono;
 extern crate reqwest;
 extern crate serde;
+extern crate url;
 
 /// Registering your App
 pub mod apps;
@@ -49,6 +50,8 @@ pub mod status_builder;
 pub mod entities;
 /// Registering your app.
 pub mod registration;
+/// Handling multiple pages of entities.
+pub mod page;
 
 use std::borrow::Cow;
 use std::error::Error as StdError;
@@ -60,9 +63,11 @@ use json::Error as SerdeError;
 use reqwest::Error as HttpError;
 use reqwest::{Client, Response, StatusCode};
 use reqwest::header::{Authorization, Bearer, Headers};
+use url::ParseError as UrlError;
 
 use entities::prelude::*;
 pub use status_builder::StatusBuilder;
+use page::Page;
 
 pub use registration::Registration;
 /// Convience type over `std::result::Result` with `Error` as the error type.
@@ -78,9 +83,31 @@ macro_rules! methods {
                     .headers(self.headers.clone())
                     .send()?;
 
-                json_convert_response(response)
+                deserialise(response)
             }
          )+
+    };
+}
+
+macro_rules! paged_routes {
+
+    (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
+        /// Equivalent to `/api/v1/
+        #[doc = $url]
+        /// `
+        ///
+        #[doc = "# Errors"]
+        /// If `access_token` is not set.
+        pub fn $name(&self) -> Result<Page<$ret>> {
+            let url = self.route(concat!("/api/v1/", $url));
+            let response = self.client.$method(&url)
+                .headers(self.headers.clone())
+                .send()?;
+
+            Page::new(self, response)
+        }
+
+        route!{$($rest)*}
     };
 }
 
@@ -114,13 +141,13 @@ macro_rules! route {
                 return Err(Error::Server(status));
             }
 
-            json_convert_response(response)
+            deserialise(response)
         }
 
         route!{$($rest)*}
     };
 
-    ((post ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
+    (($method:ident ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
         /// Equivalent to `/api/v1/
         #[doc = $url]
         /// `
@@ -135,7 +162,7 @@ macro_rules! route {
                 )*
             });
 
-            let response = self.client.post(&self.route(concat!("/api/v1/", $url)))
+            let response = self.client.$method(&self.route(concat!("/api/v1/", $url)))
                 .headers(self.headers.clone())
                 .json(&form_data)
                 .send()?;
@@ -148,7 +175,7 @@ macro_rules! route {
                 return Err(Error::Server(status));
             }
 
-            json_convert_response(response)
+            deserialise(response)
         }
 
         route!{$($rest)*}
@@ -231,6 +258,9 @@ pub enum Error {
     /// Wrapper around the `std::io::Error` struct.
     #[serde(skip_deserializing)]
     Io(IoError),
+    /// Wrapper around the `url::ParseError` struct.
+    #[serde(skip_deserializing)]
+    Url(UrlError),
     /// Missing Client Id.
     #[serde(skip_deserializing)]
     ClientIdRequired,
@@ -263,6 +293,7 @@ impl StdError for Error {
             Error::Serde(ref e) => e.description(),
             Error::Http(ref e) => e.description(),
             Error::Io(ref e) => e.description(),
+            Error::Url(ref e) => e.description(),
             Error::Client(ref status) | Error::Server(ref status) => {
                 status.canonical_reason().unwrap_or("Unknown Status code")
             },
@@ -323,22 +354,30 @@ impl Mastodon {
         }
     }
 
+    paged_routes! {
+        (get) favourites: "favourites" => Status,
+    }
+
     route! {
-        (get) verify: "accounts/verify_credentials" => Account,
+        (delete (domain: String,)) unblock_domain: "domain_blocks" => Empty,
         (get) blocks: "blocks" => Vec<Account>,
+        (get) domain_blocks: "domain_blocks" => Vec<String>,
         (get) follow_requests: "follow_requests" => Vec<Account>,
+        (get) get_home_timeline: "timelines/home" => Vec<Status>,
+        (get) instance: "instance" => Instance,
+        (get) get_emojis: "custom_emojis" => Vec<Emoji>,
         (get) mutes: "mutes" => Vec<Account>,
         (get) notifications: "notifications" => Vec<Notification>,
         (get) reports: "reports" => Vec<Report>,
-        (get) get_home_timeline: "timelines/home" => Vec<Status>,
-        (post (id: u64,)) allow_follow_request: "accounts/follow_requests/authorize" => Empty,
+        (get) verify_credentials: "accounts/verify_credentials" => Account,
+        (post (account_id: u64, status_ids: Vec<u64>, comment: String,)) report: "reports" => Report,
+        (post (domain: String,)) block_domain: "domain_blocks" => Empty,
+        (post (id: u64,)) authorize_follow_request: "accounts/follow_requests/authorize" => Empty,
         (post (id: u64,)) reject_follow_request: "accounts/follow_requests/reject" => Empty,
-        (post (uri: Cow<'static, str>,)) follows: "follows" => Account,
-        (post) clear_notifications: "notifications/clear" => Empty,
-        (post multipart (file: Cow<'static, str>,)) media: "media" => Attachment,
-        (post (account_id: u64, status_ids: Vec<u64>, comment: String,)) report:
-            "reports" => Report,
         (post (q: String, resolve: bool,)) search: "search" => SearchResult,
+        (post (uri: Cow<'static, str>,)) follows: "follows" => Account,
+        (post multipart (file: Cow<'static, str>,)) media: "media" => Attachment,
+        (post) clear_notifications: "notifications/clear" => Empty,
     }
 
     route_id! {
@@ -364,6 +403,27 @@ impl Mastodon {
         (delete) delete_status: "statuses/{}" => Empty,
     }
 
+    pub fn update_credentials(&self, changes: CredientialsBuilder)
+        -> Result<Account>
+    {
+
+        let url = self.route("/api/v1/accounts/update_credentials");
+        let response = self.client.patch(&url)
+            .headers(self.headers.clone())
+            .multipart(changes.into_form()?)
+            .send()?;
+
+        let status = response.status().clone();
+
+        if status.is_client_error() {
+            return Err(Error::Client(status));
+        } else if status.is_server_error() {
+            return Err(Error::Server(status));
+        }
+
+        deserialise(response)
+    }
+
     /// Post a new status to the account.
     pub fn new_status(&self, status: StatusBuilder) -> Result<Status> {
 
@@ -372,7 +432,7 @@ impl Mastodon {
             .json(&status)
             .send()?;
 
-        json_convert_response(response)
+        deserialise(response)
     }
 
     /// Get the federated timeline for the instance.
@@ -452,11 +512,6 @@ impl Mastodon {
         self.get(format!("{}/api/v1/accounts/search?q={}", self.base, query))
     }
 
-    /// Returns the current Instance.
-    pub fn instance(&self) -> Result<Instance> {
-        self.get(self.route("/api/v1/instance"))
-    }
-
     methods![get, post, delete,];
 
     fn route(&self, url: &str) -> String {
@@ -488,14 +543,17 @@ macro_rules! from {
 }
 
 from! {
-    SerdeError, Serde,
     HttpError, Http,
     IoError, Io,
+    SerdeError, Serde,
+    UrlError, Url,
 }
 
 // Convert the HTTP response body from JSON. Pass up deserialization errors
 // transparently.
-fn json_convert_response<T: for<'de> serde::Deserialize<'de>>(mut response: Response) -> Result<T> {
+fn deserialise<T: for<'de> serde::Deserialize<'de>>(mut response: Response)
+    -> Result<T>
+{
     use std::io::Read;
 
     let mut vec = Vec::new();

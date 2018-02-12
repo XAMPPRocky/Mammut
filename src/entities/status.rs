@@ -28,6 +28,8 @@ pub struct Status {
     pub content: String,
     /// The time the status was created.
     pub created_at: DateTime<Utc>,
+    /// An array of Emoji
+    pub emojis: Vec<Emoji>,
     /// The number of reblogs for the status.
     pub reblogs_count: u64,
     /// The number of favourites for the status.
@@ -51,6 +53,10 @@ pub struct Status {
     pub tags: Vec<Tag>,
     /// Name of application used to post status.
     pub application: Option<Application>,
+    /// The detected language for the status, if detected.
+    pub language: Option<String>,
+    /// Whether this is the pinned status for the account that posted it.
+    pub pinned: Option<bool>,
 }
 
 /// A mention of another user.
@@ -64,6 +70,17 @@ pub struct Mention {
     pub acct: String,
     /// Account ID.
     pub id: String,
+}
+
+/// Struct representing an emoji within text.
+#[derive(Clone, Debug, Deserialize)]
+pub struct Emoji {
+    /// The shortcode of the emoji
+    pub shortcode: String,
+    /// URL to the emoji static image
+    pub static_url: String,
+    /// URL to the emoji image
+    pub url: String,
 }
 
 /// Hashtags in the status.

@@ -1,6 +1,9 @@
 //! A module containing everything relating to a account returned from the api.
 
 use chrono::prelude::*;
+use reqwest::multipart::Form;
+use ::Result;
+use std::path::Path;
 
 /// A struct representing an Account.
 #[derive(Debug, Clone, Deserialize)]
@@ -36,4 +39,59 @@ pub struct Account {
     pub url: String,
     /// The username of the account.
     pub username: String,
+    /// An extra attribute given from `verify_credentials` giving defaults about
+    /// a user
+    pub source: Option<Source>,
+    /// If the owner decided to switch accounts, new account is in
+    /// this attribute
+    pub moved: Option<String>,
+}
+
+/// An extra object given from `verify_credentials` giving defaults about a user
+#[derive(Debug, Clone, Deserialize)]
+pub struct Source {
+    privacy: ::status_builder::Visibility,
+    sensitive: bool,
+    note: String,
+}
+
+pub struct CredientialsBuilder<'a> {
+    display_name: Option<&'a str>,
+    note: Option<&'a str>,
+    avatar: Option<&'a Path>,
+    header: Option<&'a Path>,
+}
+
+impl<'a> CredientialsBuilder<'a> {
+    pub fn into_form(self) -> Result<Form> {
+        let mut form = Form::new();
+        macro_rules! add_to_form {
+            ($key:ident : Text; $($rest:tt)*) => {{
+                if let Some(val) = self.$key {
+                    form = form.text(stringify!($key), val.to_owned());
+                }
+
+                add_to_form!{$($rest)*}
+            }};
+
+            ($key:ident : File; $($rest:tt)*) => {{
+                if let Some(val) = self.$key {
+                    form = form.file(stringify!($key), val)?;
+                }
+
+                add_to_form!{$($rest)*}
+            }};
+
+            () => {}
+        }
+
+        add_to_form! {
+            display_name: Text;
+            note: Text;
+            avatar: File;
+            header: File;
+        }
+
+        Ok(form)
+    }
 }
