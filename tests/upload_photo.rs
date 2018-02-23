@@ -1,5 +1,5 @@
-extern crate mammut;
 extern crate dotenv;
+extern crate mammut;
 
 use std::env;
 
@@ -16,7 +16,6 @@ fn upload_photo() {
 }
 
 fn run() -> mammut::Result<()> {
-
     let data = Data {
         base: env::var("BASE").unwrap().into(),
         client_id: env::var("CLIENT_ID").unwrap().into(),
