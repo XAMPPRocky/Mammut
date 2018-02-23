@@ -1,5 +1,9 @@
 # Mammut. A API Wrapper for the Mastodon API.
 
+[![crates.io](https://img.shields.io/crates/v/mammut.svg)](https://crates.io/crates/mammut)
+[![Docs](https://docs.rs/mammut/badge.svg)](https://docs.rs/mammut)
+[![MIT/APACHE-2.0](https://img.shields.io/crates/l/mammut.svg)](https://crates.io/crates/mammut)
+
 ## [Documentation](https://docs.rs/mammut/)
 
 A wrapper around the [API](https://github.com/tootsuite/mastodon/blob/master/docs/Using-the-API/API.md#tag) for [Mastodon](https://mastodon.social/)
