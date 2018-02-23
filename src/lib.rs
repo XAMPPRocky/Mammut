@@ -35,11 +35,13 @@
 #![cfg_attr(test, deny(warnings))]
 #![cfg_attr(test, deny(missing_docs))]
 
-#[macro_use] extern crate serde_derive;
-#[macro_use] extern crate serde_json as json;
 extern crate chrono;
 extern crate reqwest;
 extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+#[macro_use]
+extern crate serde_json as json;
 extern crate url;
 
 /// Registering your App
@@ -222,7 +224,7 @@ pub struct Mastodon {
     client: Client,
     headers: Headers,
     /// Raw data about your mastodon instance.
-    pub data: Data
+    pub data: Data,
 }
 
 /// Raw data about mastodon app. Save `Data` using `serde` to prevent needing
@@ -287,16 +289,14 @@ impl fmt::Display for Error {
 impl StdError for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::Api(ref e) => {
-                e.error_description.as_ref().unwrap_or(&e.error)
-            },
+            Error::Api(ref e) => e.error_description.as_ref().unwrap_or(&e.error),
             Error::Serde(ref e) => e.description(),
             Error::Http(ref e) => e.description(),
             Error::Io(ref e) => e.description(),
             Error::Url(ref e) => e.description(),
             Error::Client(ref status) | Error::Server(ref status) => {
                 status.canonical_reason().unwrap_or("Unknown Status code")
-            },
+            }
             Error::ClientIdRequired => "ClientIdRequired",
             Error::ClientSecretRequired => "ClientSecretRequired",
             Error::AccessTokenRequired => "AccessTokenRequired",
@@ -314,38 +314,43 @@ pub struct ApiError {
 }
 
 impl Mastodon {
-    fn from_registration<I>(base: I,
-                         client_id: I,
-                         client_secret: I,
-                         redirect: I,
-                         token: I,
-                         client: Client)
-        -> Self
-        where I: Into<Cow<'static, str>>
-        {
-            let data = Data {
-                base: base.into(),
-                client_id: client_id.into(),
-                client_secret: client_secret.into(),
-                redirect: redirect.into(),
-                token: token.into(),
+    fn from_registration<I>(
+        base: I,
+        client_id: I,
+        client_secret: I,
+        redirect: I,
+        token: I,
+        client: Client,
+    ) -> Self
+    where
+        I: Into<Cow<'static, str>>,
+    {
+        let data = Data {
+            base: base.into(),
+            client_id: client_id.into(),
+            client_secret: client_secret.into(),
+            redirect: redirect.into(),
+            token: token.into(),
+        };
 
-            };
+        let mut headers = Headers::new();
+        headers.set(Authorization(Bearer {
+            token: (*data.token).to_owned(),
+        }));
 
-            let mut headers = Headers::new();
-            headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
-
-            Mastodon {
-                client: client,
-                headers: headers,
-                data: data,
-            }
+        Mastodon {
+            client: client,
+            headers: headers,
+            data: data,
         }
+    }
 
     /// Creates a mastodon instance from the data struct.
     pub fn from_data(data: Data) -> Self {
         let mut headers = Headers::new();
-        headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
+        headers.set(Authorization(Bearer {
+            token: (*data.token).to_owned(),
+        }));
 
         Mastodon {
             client: Client::new(),
@@ -403,12 +408,10 @@ impl Mastodon {
         (delete) delete_status: "statuses/{}" => Empty,
     }
 
-    pub fn update_credentials(&self, changes: CredientialsBuilder)
-        -> Result<Account>
-    {
-
+    pub fn update_credentials(&self, changes: CredientialsBuilder) -> Result<Account> {
         let url = self.route("/api/v1/accounts/update_credentials");
-        let response = self.client.patch(&url)
+        let response = self.client
+            .patch(&url)
             .headers(self.headers.clone())
             .multipart(changes.into_form()?)
             .send()?;
@@ -426,8 +429,8 @@ impl Mastodon {
 
     /// Post a new status to the account.
     pub fn new_status(&self, status: StatusBuilder) -> Result<Status> {
-
-        let response = self.client.post(&self.route("/api/v1/statuses"))
+        let response = self.client
+            .post(&self.route("/api/v1/statuses"))
             .headers(self.headers.clone())
             .json(&status)
             .send()?;
@@ -461,28 +464,26 @@ impl Mastodon {
 
     /// Get statuses of a single account by id. Optionally only with pictures
     /// and or excluding replies.
-    pub fn statuses(&self, id: u64, only_media: bool, exclude_replies: bool)
-        -> Result<Vec<Status>>
-        {
-            let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
+    pub fn statuses(
+        &self,
+        id: u64,
+        only_media: bool,
+        exclude_replies: bool,
+    ) -> Result<Vec<Status>> {
+        let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
 
-            if only_media {
-                url += "?only_media=1";
-            }
-
-            if exclude_replies {
-                url += if only_media {
-                    "&"
-                } else {
-                    "?"
-                };
-
-                url += "exclude_replies=1";
-            }
-
-            self.get(url)
+        if only_media {
+            url += "?only_media=1";
         }
 
+        if exclude_replies {
+            url += if only_media { "&" } else { "?" };
+
+            url += "exclude_replies=1";
+        }
+
+        self.get(url)
+    }
 
     /// Returns the client account's relationship to a list of other accounts.
     /// Such as whether they follow them or vice versa.
@@ -551,9 +552,7 @@ from! {
 
 // Convert the HTTP response body from JSON. Pass up deserialization errors
 // transparently.
-fn deserialise<T: for<'de> serde::Deserialize<'de>>(mut response: Response)
-    -> Result<T>
-{
+fn deserialise<T: for<'de> serde::Deserialize<'de>>(mut response: Response) -> Result<T> {
     use std::io::Read;
 
     let mut vec = Vec::new();
@@ -568,6 +567,6 @@ fn deserialise<T: for<'de> serde::Deserialize<'de>>(mut response: Response)
                 return Err(Error::Api(error));
             }
             Err(e.into())
-        },
+        }
     }
 }

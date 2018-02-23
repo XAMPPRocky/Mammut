@@ -8,7 +8,7 @@ pub struct Attachment {
     /// ID of the attachment.
     pub id: String,
     /// The media type of an attachment.
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub media_type: MediaType,
     /// URL of the locally hosted version of the image.
     pub url: String,
@@ -20,15 +20,13 @@ pub struct Attachment {
     /// (only present on local images)
     pub text_url: Option<String>,
     /// Meta information about the attachment.
-    #[serde(deserialize_with="empty_as_none")]
+    #[serde(deserialize_with = "empty_as_none")]
     pub meta: Option<Meta>,
     /// Noop will be removed.
     pub description: Option<String>,
 }
 
-fn empty_as_none<'de, D: Deserializer<'de>>(val: D)
-    -> Result<Option<Meta>, D::Error>
-{
+fn empty_as_none<'de, D: Deserializer<'de>>(val: D) -> Result<Option<Meta>, D::Error> {
     #[derive(Deserialize)]
     #[serde(untagged)]
     enum EmptyOrMeta {
@@ -62,7 +60,6 @@ pub struct ImageDetails {
     size: String,
     /// The aspect ratio of the attachment.
     aspect: f64,
-
 }
 
 /// The type of media attachment.

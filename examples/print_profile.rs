@@ -15,7 +15,7 @@ fn main() {
             file.read_to_string(&mut config).unwrap();
             let data: Data = toml::from_str(&config).unwrap();
             Mastodon::from_data(data)
-        },
+        }
         Err(_) => register(),
     };
 

@@ -1,4 +1,4 @@
-use super::{Mastodon, Result, deserialise};
+use super::{deserialise, Mastodon, Result};
 use reqwest::Response;
 use reqwest::header::{Link, RelationType};
 use serde::Deserialize;
@@ -43,7 +43,7 @@ impl<'a, T: for<'de> Deserialize<'de>> Page<'a, T> {
             initial_items: deserialise(response)?,
             next,
             prev,
-            mastodon
+            mastodon,
         })
     }
 
@@ -52,7 +52,6 @@ impl<'a, T: for<'de> Deserialize<'de>> Page<'a, T> {
         prev: prev_page
     }
 }
-
 
 fn get_links(response: &Response) -> Result<(Option<Url>, Option<Url>)> {
     let mut prev = None;

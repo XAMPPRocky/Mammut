@@ -2,7 +2,7 @@
 
 use chrono::prelude::*;
 use reqwest::multipart::Form;
-use ::Result;
+use Result;
 use std::path::Path;
 
 /// A struct representing an Account.
