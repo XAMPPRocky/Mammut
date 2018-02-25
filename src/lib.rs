@@ -215,6 +215,28 @@ macro_rules! route_id {
     }
 
 }
+macro_rules! paged_routes_with_id {
+
+    (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
+        /// Equivalent to `/api/v1/
+        #[doc = $url]
+        /// `
+        ///
+        #[doc = "# Errors"]
+        /// If `access_token` is not set.
+        pub fn $name(&self, id: &str) -> Result<Page<$ret>> {
+            let url = self.route(&format!(concat!("/api/v1/", $url), id));
+            let response = self.client.$method(&url)
+                .headers(self.headers.clone())
+                .send()?;
+
+            Page::new(self, response)
+        }
+
+        route!{$($rest)*}
+    };
+}
+
 
 /// Your mastodon application client, handles all requests to and from Mastodon.
 #[derive(Clone, Debug)]
@@ -356,24 +378,31 @@ impl Mastodon {
 
     paged_routes! {
         (get) favourites: "favourites" => Status,
+        (get) blocks: "blocks" => Account,
+        (get) domain_blocks: "domain_blocks" => String,
+        (get) follow_requests: "follow_requests" => Account,
+        (get) get_home_timeline: "timelines/home" => Status,
+        (get) get_emojis: "custom_emojis" => Emoji,
+        (get) mutes: "mutes" => Account,
+        (get) notifications: "notifications" => Notification,
+        (get) reports: "reports" => Report,
+    }
+
+    paged_routes_with_id! {
+        (get) followers: "accounts/{}/followers" => Account,
+        (get) following: "accounts/{}/following" => Account,
+        (get) reblogged_by: "statuses/{}/reblogged_by" => Account,
+        (get) favourited_by: "statuses/{}/favourited_by" => Account,
     }
 
     route! {
         (delete (domain: String,)) unblock_domain: "domain_blocks" => Empty,
-        (get) blocks: "blocks" => Vec<Account>,
-        (get) domain_blocks: "domain_blocks" => Vec<String>,
-        (get) follow_requests: "follow_requests" => Vec<Account>,
-        (get) get_home_timeline: "timelines/home" => Vec<Status>,
         (get) instance: "instance" => Instance,
-        (get) get_emojis: "custom_emojis" => Vec<Emoji>,
-        (get) mutes: "mutes" => Vec<Account>,
-        (get) notifications: "notifications" => Vec<Notification>,
-        (get) reports: "reports" => Vec<Report>,
         (get) verify_credentials: "accounts/verify_credentials" => Account,
-        (post (account_id: u64, status_ids: Vec<u64>, comment: String,)) report: "reports" => Report,
+        (post (account_id: &str, status_ids: Vec<&str>, comment: String,)) report: "reports" => Report,
         (post (domain: String,)) block_domain: "domain_blocks" => Empty,
-        (post (id: u64,)) authorize_follow_request: "accounts/follow_requests/authorize" => Empty,
-        (post (id: u64,)) reject_follow_request: "accounts/follow_requests/reject" => Empty,
+        (post (id: &str,)) authorize_follow_request: "accounts/follow_requests/authorize" => Empty,
+        (post (id: &str,)) reject_follow_request: "accounts/follow_requests/reject" => Empty,
         (post (q: String, resolve: bool,)) search: "search" => SearchResult,
         (post (uri: Cow<'static, str>,)) follows: "follows" => Account,
         (post multipart (file: Cow<'static, str>,)) media: "media" => Attachment,
@@ -382,8 +411,6 @@ impl Mastodon {
 
     route_id! {
         (get) get_account: "accounts/{}" => Account,
-        (get) followers: "accounts/{}/followers" => Vec<Account>,
-        (get) following: "accounts/{}/following" => Vec<Account>,
         (get) follow: "accounts/{}/follow" => Account,
         (get) unfollow: "accounts/{}/unfollow" => Account,
         (get) block: "accounts/{}/block" => Account,
@@ -394,8 +421,6 @@ impl Mastodon {
         (get) get_status: "statuses/{}" => Status,
         (get) get_context: "statuses/{}/context" => Context,
         (get) get_card: "statuses/{}/card" => Card,
-        (get) reblogged_by: "statuses/{}/reblogged_by" => Vec<Account>,
-        (get) favourited_by: "statuses/{}/favourited_by" => Vec<Account>,
         (post) reblog: "statuses/{}/reblog" => Status,
         (post) unreblog: "statuses/{}/unreblog" => Status,
         (post) favourite: "statuses/{}/favourite" => Status,
@@ -461,55 +486,77 @@ impl Mastodon {
 
     /// Get statuses of a single account by id. Optionally only with pictures
     /// and or excluding replies.
-    pub fn statuses(&self, id: u64, only_media: bool, exclude_replies: bool)
-        -> Result<Vec<Status>>
-        {
-            let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
+    pub fn statuses(&self, id: &str, only_media: bool, exclude_replies: bool)
+        -> Result<Page<Status>>
+    {
+        let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
 
-            if only_media {
-                url += "?only_media=1";
-            }
-
-            if exclude_replies {
-                url += if only_media {
-                    "&"
-                } else {
-                    "?"
-                };
-
-                url += "exclude_replies=1";
-            }
-
-            self.get(url)
+        if only_media {
+            url += "?only_media=1";
         }
+
+        if exclude_replies {
+            url += if only_media {
+                "&"
+            } else {
+                "?"
+            };
+
+            url += "exclude_replies=1";
+        }
+
+        let response = self.client.get(&url)
+            .headers(self.headers.clone())
+            .send()?;
+
+        Page::new(self, response)
+    }
 
 
     /// Returns the client account's relationship to a list of other accounts.
     /// Such as whether they follow them or vice versa.
-    pub fn relationships(&self, ids: &[u64]) -> Result<Vec<Relationship>> {
+    pub fn relationships(&self, ids: &[&str]) -> Result<Page<Relationship>> {
         let mut url = self.route("/api/v1/accounts/relationships?");
 
         if ids.len() == 1 {
             url += "id=";
-            url += &ids[0].to_string();
+            url += &ids[0];
         } else {
             for id in ids {
                 url += "id[]=";
-                url += &id.to_string();
+                url += &id;
                 url += "&";
             }
             url.pop();
         }
 
-        self.get(url)
+        let response = self.client.get(&url)
+            .headers(self.headers.clone())
+            .send()?;
+
+        Page::new(self, response)
     }
 
     /// Search for accounts by their name.
     /// Will lookup an account remotely if the search term is in the
     /// `username@domain` format and not yet in the database.
-    // TODO: Add a limit fn
-    pub fn search_accounts(&self, query: &str) -> Result<Vec<Account>> {
-        self.get(format!("{}/api/v1/accounts/search?q={}", self.base, query))
+    pub fn search_accounts(&self,
+                           query: &str,
+                           limit: Option<u64>,
+                           following: bool)
+        -> Result<Page<Account>>
+    {
+        let url = format!("{}/api/v1/accounts/search?q={}&limit={}&following={}",
+                          self.base,
+                          query,
+                          limit.unwrap_or(40),
+                          following);
+
+        let response = self.client.get(&url)
+            .headers(self.headers.clone())
+            .send()?;
+
+        Page::new(self, response)
     }
 
     methods![get, post, delete,];
