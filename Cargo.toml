@@ -1,6 +1,6 @@
 [package]
 name = "mammut"
-version = "0.10.0-rc1"
+version = "0.10.0-rc2"
 
 description = "A wrapper around the Mastodon API."
 authors = ["Aaron Power <theaaronepower@gmail.com>"]
@@ -22,5 +22,5 @@ version = "0.4"
 features = ["serde"]
 
 [dev-dependencies]
-dotenv = "0.10"
+dotenv = "0.11"
 toml = "0.4"
