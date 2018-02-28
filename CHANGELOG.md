@@ -1,4 +1,4 @@
-# 0.10 (prerelease)
+# 0.10
 
 - Added the ability to handle paged entities like favourites and such.(Only favourites in prerelease)
 - Added optional `source` and `moved` fields to `Account`.
@@ -14,3 +14,4 @@
 - Added `Emoji` struct.
 - Added `List` and `Mention` structs(matching routes not added yet).
 - Added example that prints your profile.
+- Updated dependencies
