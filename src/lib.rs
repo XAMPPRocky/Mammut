@@ -312,7 +312,9 @@ impl StdError for Error {
     fn description(&self) -> &str {
         match *self {
             Error::Api(ref e) => {
-                e.error_description.as_ref().unwrap_or(&e.error)
+                e.error_description.as_ref().map(|i| &**i)
+                    .or(e.error.as_ref().map(|i| &**i))
+                    .unwrap_or("Unknown API Error")
             },
             Error::Serde(ref e) => e.description(),
             Error::Http(ref e) => e.description(),
@@ -332,7 +334,7 @@ impl StdError for Error {
 #[derive(Clone, Debug, Deserialize)]
 pub struct ApiError {
     /// The type of error.
-    pub error: String,
+    pub error: Option<String>,
     /// The description of the error.
     pub error_description: Option<String>,
 }
