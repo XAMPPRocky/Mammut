@@ -27,7 +27,7 @@
 //! let code = String::from("RETURNED_FROM_BROWSER");
 //! let mastodon = registration.create_access_token(code)?;
 //!
-//! println!("{:?}", mastodon.get_home_timeline()?);
+//! println!("{:?}", mastodon.get_home_timeline()?.initial_items);
 //! # Ok(())
 //! # }
 //! ```
