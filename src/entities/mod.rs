@@ -23,7 +23,7 @@ pub mod prelude {
     pub use super::attachment::{Attachment, MediaType};
     pub use super::card::Card;
     pub use super::context::Context;
-    pub use super::instance::Instance;
+    pub use super::instance::*;
     pub use super::list::List;
     pub use super::mention::Mention;
     pub use super::notification::Notification;
