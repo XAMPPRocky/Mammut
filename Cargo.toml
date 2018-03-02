@@ -1,6 +1,6 @@
 [package]
 name = "mammut"
-version = "0.10.0"
+version = "0.10.1"
 
 description = "A wrapper around the Mastodon API."
 authors = ["Aaron Power <theaaronepower@gmail.com>"]
