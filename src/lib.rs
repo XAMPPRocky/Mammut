@@ -107,8 +107,10 @@ macro_rules! paged_routes {
             Page::new(self, response)
         }
 
-        route!{$($rest)*}
+        paged_routes!{$($rest)*}
     };
+
+    () => {}
 }
 
 macro_rules! route {
