@@ -44,7 +44,7 @@ pub struct Account {
     pub source: Option<Source>,
     /// If the owner decided to switch accounts, new account is in
     /// this attribute
-    pub moved: Option<String>,
+    pub moved: Option<Box<Account>>,
 }
 
 /// An extra object given from `verify_credentials` giving defaults about a user
