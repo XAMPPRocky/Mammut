@@ -36,11 +36,12 @@ pub fn register() -> Result<Mastodon, Box<Error>> {
     let app = AppBuilder {
         client_name: "mammut-examples",
         redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
-        scopes: Scopes::Read,
+        scopes: Scopes::All,
         website: Some("https://github.com/Aaronepower/mammut"),
     };
 
-    let mut registration = Registration::new("https://mastodon.social");
+    let website = read_line("Please enter your mastodon instance url:")?;
+    let mut registration = Registration::new(website.trim());
     registration.register(app)?;
     let url = registration.authorise()?;
 
