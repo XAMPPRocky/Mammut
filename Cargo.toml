@@ -22,5 +22,4 @@ version = "0.4"
 features = ["serde"]
 
 [dev-dependencies]
-dotenv = "0.11"
 toml = "0.4"
