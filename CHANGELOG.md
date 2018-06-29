@@ -1,3 +1,8 @@
+# 0.11
+- Added more examples to `examples` directory.
+- Fixed `follow` and `unfollow` routes.
+- Updated `moved` field to be `Box<Account>`.
+
 # 0.10
 
 - Added the ability to handle paged entities like favourites and such.(Only favourites in prerelease)
