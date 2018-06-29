@@ -29,6 +29,8 @@ struct AccessToken {
 impl Registration {
     /// Construct a new registration process to the instance of the `base` url.
     /// ```
+    /// use mammut::registration::Registration;
+    ///
     /// let registration = Registration::new("https://mastodon.social");
     /// ```
     pub fn new<I: Into<String>>(base: I) -> Self {

@@ -2,6 +2,8 @@ use std::fmt;
 
 /// Builder struct for defining your application.
 /// ```
+/// use mammut::apps::{AppBuilder, Scopes};
+///
 /// let app = AppBuilder {
 ///     client_name: "mammut_test",
 ///     redirect_uris: "urn:ietf:wg:oauth:2.0:oob",

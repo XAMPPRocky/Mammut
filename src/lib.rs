@@ -92,9 +92,8 @@ macro_rules! methods {
 macro_rules! paged_routes {
 
     (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Equivalent to `/api/v1/
+        /// Equivalent to /api/v1/
         #[doc = $url]
-        /// `
         ///
         #[doc = "# Errors"]
         /// If `access_token` is not set.
@@ -116,9 +115,8 @@ macro_rules! paged_routes {
 macro_rules! route {
 
     ((post multipart ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Equivalent to `/api/v1/
+        /// Equivalent to /api/v1/
         #[doc = $url]
-        /// `
         ///
         #[doc = "# Errors"]
         /// If `access_token` is not set.
@@ -150,9 +148,8 @@ macro_rules! route {
     };
 
     (($method:ident ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Equivalent to `/api/v1/
+        /// Equivalent to /api/v1/
         #[doc = $url]
-        /// `
         ///
         #[doc = "# Errors"]
         /// If `access_token` is not set.
@@ -184,9 +181,8 @@ macro_rules! route {
     };
 
     (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Equivalent to `/api/v1/
+        /// Equivalent to /api/v1/
         #[doc = $url]
-        /// `
         ///
         #[doc = "# Errors"]
         /// If `access_token` is not set.
@@ -204,9 +200,8 @@ macro_rules! route_id {
 
     ($(($method:ident) $name:ident: $url:expr => $ret:ty,)*) => {
         $(
-            /// Equivalent to `/api/v1/
+            /// Equivalent to /api/v1/
             #[doc = $url]
-            /// `
             ///
             #[doc = "# Errors"]
             /// If `access_token` is not set.
@@ -220,9 +215,8 @@ macro_rules! route_id {
 macro_rules! paged_routes_with_id {
 
     (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Equivalent to `/api/v1/
+        /// Equivalent to /api/v1/
         #[doc = $url]
-        /// `
         ///
         #[doc = "# Errors"]
         /// If `access_token` is not set.
@@ -415,8 +409,8 @@ impl Mastodon {
 
     route_id! {
         (get) get_account: "accounts/{}" => Account,
-        (get) follow: "accounts/{}/follow" => Account,
-        (get) unfollow: "accounts/{}/unfollow" => Account,
+        (post) follow: "accounts/{}/follow" => Account,
+        (post) unfollow: "accounts/{}/unfollow" => Account,
         (get) block: "accounts/{}/block" => Account,
         (get) unblock: "accounts/{}/unblock" => Account,
         (get) mute: "accounts/{}/mute" => Account,

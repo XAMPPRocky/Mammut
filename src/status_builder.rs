@@ -41,6 +41,8 @@ impl StatusBuilder {
 
     /// Create a new status with text.
     /// ```
+    /// use mammut::status_builder::StatusBuilder;
+    ///
     /// let status = StatusBuilder::new("Hello World!".into());
     /// ```
     pub fn new(status: String) -> Self {
