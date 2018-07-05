@@ -18,7 +18,7 @@ pub struct Registration {
 struct OAuth {
     client_id: String,
     client_secret: String,
-    redirect_uri: String,
+    redirect_uri: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -81,7 +81,10 @@ impl Registration {
 
         self.client_id = Some(app.client_id);
         self.client_secret = Some(app.client_secret);
-        self.redirect = Some(app.redirect_uri);
+        self.redirect = match app.redirect_uri {
+            Some(uri) => Some(uri),
+            None => Some("urn:ietf:wg:oauth:2.0:oob".to_string())
+        };
 
         Ok(())
     }
@@ -117,12 +120,12 @@ impl Registration {
     pub fn create_access_token(self, code: String) -> Result<Mastodon> {
         self.is_registered()?;
         let url = format!(
-            "{}/oauth/token?client_id={}&client_secret={}&code={}&grant_type=authorization_code&redirect_uri={}",
+            "{}/oauth/token?client_id={}&client_secret={}&redirect_uri={}&code={}&grant_type=authorization_code",
             self.base,
             self.client_id.clone().unwrap(),
             self.client_secret.clone().unwrap(),
-            code,
-            self.redirect.clone().unwrap()
+            self.redirect.clone().unwrap(),
+            code
         );
 
         let token: AccessToken = self.client.post(&url).send()?.json()?;
