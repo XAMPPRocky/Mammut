@@ -585,26 +585,35 @@ impl Mastodon {
 
     /// Get statuses of a single account by id. Optionally only with pictures
     /// and or excluding replies.
-    pub fn statuses(&self, id: &str, only_media: bool, exclude_replies: bool)
-        -> Result<Page<Status>>
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let client = Mastodon::from_data(data);
+    /// let statuses = client.statuses("user-id", None)?;
+    /// ```
+    ///
+    /// ```ignore
+    /// let client = Mastodon::from_data(data);
+    /// let request = StatusesRequest::default()
+    ///                               .only_media();
+    /// let statuses = client.statuses("user-id", request)?;
+    /// ```
+    pub fn statuses<S>(&self, id: &str, request: S) -> Result<Page<Status>>
+            where S: Into<Option<StatusesRequest>>
     {
-        let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
+        let url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
 
-        if only_media {
-            url += "?only_media=1";
+        if let Some(request) = request.into() {
+            let qs = request.to_querystring();
+            self._statuses(&format!("{}{}", url, qs))
+        } else {
+            self._statuses(&url)
         }
+    }
 
-        if exclude_replies {
-            url += if only_media {
-                "&"
-            } else {
-                "?"
-            };
-
-            url += "exclude_replies=1";
-        }
-
-        let response = self.client.get(&url)
+    fn _statuses(&self, url: &str) -> Result<Page<Status>> {
+        let response = self.client.get(url)
             .headers(self.headers.clone())
             .send()?;
 
