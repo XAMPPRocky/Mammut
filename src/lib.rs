@@ -54,6 +54,7 @@ pub mod registration;
 pub mod page;
 
 use std::borrow::Cow;
+use std::default::Default;
 use std::error::Error as StdError;
 use std::fmt;
 use std::io::Error as IoError;
@@ -331,6 +332,106 @@ pub struct ApiError {
     pub error: Option<String>,
     /// The description of the error.
     pub error_description: Option<String>,
+}
+
+/// # Example
+///
+/// ```
+/// # extern crate mammut;
+/// # use mammut::StatusesRequest;
+/// let request = StatusesRequest::default()
+///                               .only_media()
+///                               .pinned()
+///                               .since_id("foo");
+/// # assert_eq!(&request.to_querystring()[..], "?only_media=1&pinned=1&since_id=foo");
+/// ```
+#[derive(Clone, Debug)]
+pub struct StatusesRequest {
+    only_media: bool,
+    exclude_replies: bool,
+    pinned: bool,
+    max_id: Option<String>,
+    since_id: Option<String>,
+    limit: Option<usize>,
+}
+
+impl Default for StatusesRequest {
+    fn default() -> StatusesRequest {
+        StatusesRequest {
+            only_media: false,
+            exclude_replies: false,
+            pinned: false,
+            max_id: None,
+            since_id: None,
+            limit: None,
+        }
+    }
+}
+
+impl StatusesRequest {
+    pub fn only_media(mut self) -> Self {
+        self.only_media = true;
+        self
+    }
+
+    pub fn exclude_replies(mut self) -> Self {
+        self.exclude_replies = true;
+        self
+    }
+
+    pub fn pinned(mut self) -> Self {
+        self.pinned = true;
+        self
+    }
+
+    pub fn max_id(mut self, max_id: &str) -> Self {
+        self.max_id = Some(max_id.into());
+        self
+    }
+
+    pub fn since_id(mut self, since_id: &str) -> Self {
+        self.since_id = Some(since_id.into());
+        self
+    }
+
+    pub fn limit(mut self, limit: usize) -> Self {
+        self.limit = Some(limit);
+        self
+    }
+
+    pub fn to_querystring(&self) -> String {
+        let mut opts = vec![];
+
+        if self.only_media {
+            opts.push("only_media=1".into());
+        }
+
+        if self.exclude_replies {
+            opts.push("exclude_replies=1".into());
+        }
+
+        if self.pinned {
+            opts.push("pinned=1".into());
+        }
+
+        if let Some(ref max_id) = self.max_id {
+            opts.push(format!("max_id={}", max_id));
+        }
+
+        if let Some(ref since_id) = self.since_id {
+            opts.push(format!("since_id={}", since_id));
+        }
+
+        if let Some(limit) = self.limit {
+            opts.push(format!("limit={}", limit));
+        }
+
+        if opts.is_empty() {
+            String::new()
+        } else {
+            format!("?{}", opts.join("&"))
+        }
+    }
 }
 
 impl Mastodon {
