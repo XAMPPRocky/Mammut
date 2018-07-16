@@ -54,7 +54,6 @@ pub mod registration;
 pub mod page;
 
 use std::borrow::Cow;
-use std::default::Default;
 use std::error::Error as StdError;
 use std::fmt;
 use std::io::Error as IoError;
@@ -345,30 +344,17 @@ pub struct ApiError {
 ///                               .since_id("foo");
 /// # assert_eq!(&request.to_querystring()[..], "?only_media=1&pinned=1&since_id=foo");
 /// ```
-#[derive(Clone, Debug)]
-pub struct StatusesRequest {
+#[derive(Clone, Debug, Default)]
+pub struct StatusesRequest<'a> {
     only_media: bool,
     exclude_replies: bool,
     pinned: bool,
-    max_id: Option<String>,
-    since_id: Option<String>,
+    max_id: Option<Cow<'a, str>>,
+    since_id: Option<Cow<'a, str>>,
     limit: Option<usize>,
 }
 
-impl Default for StatusesRequest {
-    fn default() -> StatusesRequest {
-        StatusesRequest {
-            only_media: false,
-            exclude_replies: false,
-            pinned: false,
-            max_id: None,
-            since_id: None,
-            limit: None,
-        }
-    }
-}
-
-impl StatusesRequest {
+impl<'a> StatusesRequest<'a> {
     pub fn only_media(mut self) -> Self {
         self.only_media = true;
         self
@@ -384,12 +370,12 @@ impl StatusesRequest {
         self
     }
 
-    pub fn max_id(mut self, max_id: &str) -> Self {
+    pub fn max_id<S: Into<Cow<'a, str>>>(mut self, max_id: S) -> Self {
         self.max_id = Some(max_id.into());
         self
     }
 
-    pub fn since_id(mut self, since_id: &str) -> Self {
+    pub fn since_id<S: Into<Cow<'a, str>>>(mut self, since_id: S) -> Self {
         self.since_id = Some(since_id.into());
         self
     }
@@ -599,27 +585,23 @@ impl Mastodon {
     ///                               .only_media();
     /// let statuses = client.statuses("user-id", request)?;
     /// ```
-    pub fn statuses<S>(&self, id: &str, request: S) -> Result<Page<Status>>
-            where S: Into<Option<StatusesRequest>>
+    pub fn statuses<'a, S>(&self, id: &str, request: S) -> Result<Page<Status>>
+            where S: Into<Option<StatusesRequest<'a>>>
     {
         let url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
 
-        if let Some(request) = request.into() {
-            let qs = request.to_querystring();
-            self._statuses(&format!("{}{}", url, qs))
+        let url = if let Some(request) = request.into() {
+            request.to_querystring()
         } else {
-            self._statuses(&url)
-        }
-    }
+            url
+        };
 
-    fn _statuses(&self, url: &str) -> Result<Page<Status>> {
-        let response = self.client.get(url)
+        let response = self.client.get(&url)
             .headers(self.headers.clone())
             .send()?;
 
         Page::new(self, response)
     }
-
 
     /// Returns the client account's relationship to a list of other accounts.
     /// Such as whether they follow them or vice versa.
