@@ -333,6 +333,97 @@ pub struct ApiError {
     pub error_description: Option<String>,
 }
 
+/// # Example
+///
+/// ```
+/// # extern crate mammut;
+/// # use mammut::StatusesRequest;
+/// let request = StatusesRequest::new()
+///                               .only_media()
+///                               .pinned()
+///                               .since_id("foo");
+/// # assert_eq!(&request.to_querystring()[..], "?only_media=1&pinned=1&since_id=foo");
+/// ```
+#[derive(Clone, Debug, Default)]
+pub struct StatusesRequest<'a> {
+    only_media: bool,
+    exclude_replies: bool,
+    pinned: bool,
+    max_id: Option<Cow<'a, str>>,
+    since_id: Option<Cow<'a, str>>,
+    limit: Option<usize>,
+}
+
+impl<'a> StatusesRequest<'a> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn only_media(mut self) -> Self {
+        self.only_media = true;
+        self
+    }
+
+    pub fn exclude_replies(mut self) -> Self {
+        self.exclude_replies = true;
+        self
+    }
+
+    pub fn pinned(mut self) -> Self {
+        self.pinned = true;
+        self
+    }
+
+    pub fn max_id<S: Into<Cow<'a, str>>>(mut self, max_id: S) -> Self {
+        self.max_id = Some(max_id.into());
+        self
+    }
+
+    pub fn since_id<S: Into<Cow<'a, str>>>(mut self, since_id: S) -> Self {
+        self.since_id = Some(since_id.into());
+        self
+    }
+
+    pub fn limit(mut self, limit: usize) -> Self {
+        self.limit = Some(limit);
+        self
+    }
+
+    pub fn to_querystring(&self) -> String {
+        let mut opts = vec![];
+
+        if self.only_media {
+            opts.push("only_media=1".into());
+        }
+
+        if self.exclude_replies {
+            opts.push("exclude_replies=1".into());
+        }
+
+        if self.pinned {
+            opts.push("pinned=1".into());
+        }
+
+        if let Some(ref max_id) = self.max_id {
+            opts.push(format!("max_id={}", max_id));
+        }
+
+        if let Some(ref since_id) = self.since_id {
+            opts.push(format!("since_id={}", since_id));
+        }
+
+        if let Some(limit) = self.limit {
+            opts.push(format!("limit={}", limit));
+        }
+
+        if opts.is_empty() {
+            String::new()
+        } else {
+            format!("?{}", opts.join("&"))
+        }
+    }
+}
+
 impl Mastodon {
     fn from_registration<I>(base: I,
                          client_id: I,
@@ -484,24 +575,28 @@ impl Mastodon {
 
     /// Get statuses of a single account by id. Optionally only with pictures
     /// and or excluding replies.
-    pub fn statuses(&self, id: &str, only_media: bool, exclude_replies: bool)
-        -> Result<Page<Status>>
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let client = Mastodon::from_data(data);
+    /// let statuses = client.statuses("user-id", None)?;
+    /// ```
+    ///
+    /// ```ignore
+    /// let client = Mastodon::from_data(data);
+    /// let request = StatusesRequest::default()
+    ///                               .only_media();
+    /// let statuses = client.statuses("user-id", request)?;
+    /// ```
+    pub fn statuses<'a, S>(&self, id: &str, request: S) -> Result<Page<Status>>
+            where S: Into<Option<StatusesRequest<'a>>>
     {
-        let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
-
-        if only_media {
-            url += "?only_media=1";
-        }
-
-        if exclude_replies {
-            url += if only_media {
-                "&"
-            } else {
-                "?"
-            };
-
-            url += "exclude_replies=1";
-        }
+        let url = if let Some(request) = request.into() {
+            request.to_querystring()
+        } else {
+            format!("{}/api/v1/accounts/{}/statuses", self.base, id)
+        };
 
         let response = self.client.get(&url)
             .headers(self.headers.clone())
@@ -509,7 +604,6 @@ impl Mastodon {
 
         Page::new(self, response)
     }
-
 
     /// Returns the client account's relationship to a list of other accounts.
     /// Such as whether they follow them or vice versa.
