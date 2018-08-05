@@ -6,6 +6,7 @@ pub mod instance;
 pub mod list;
 pub mod mention;
 pub mod notification;
+pub mod pageiter;
 pub mod relationship;
 pub mod report;
 pub mod search_result;
@@ -27,6 +28,7 @@ pub mod prelude {
     pub use super::list::List;
     pub use super::mention::Mention;
     pub use super::notification::Notification;
+    pub use super::pageiter::PageIter;
     pub use super::relationship::Relationship;
     pub use super::report::Report;
     pub use super::search_result::SearchResult;
