@@ -11,10 +11,11 @@ keywords = ["api", "web", "social", "mastodon", "wrapper"]
 categories = ["web-programming", "http-client"]
 
 [dependencies]
+doc-comment = "0.1"
 reqwest = "0.8"
 serde = "1"
-serde_json = "1"
 serde_derive = "1"
+serde_json = "1"
 url = "1"
 
 [dependencies.chrono]

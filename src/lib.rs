@@ -36,6 +36,7 @@
 #![cfg_attr(test, deny(missing_docs))]
 
 #[macro_use] extern crate serde_derive;
+#[macro_use] extern crate doc_comment;
 #[macro_use] extern crate serde_json as json;
 extern crate chrono;
 extern crate reqwest;
@@ -92,18 +93,20 @@ macro_rules! methods {
 macro_rules! paged_routes {
 
     (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Equivalent to /api/v1/
-        #[doc = $url]
-        ///
-        #[doc = "# Errors"]
-        /// If `access_token` is not set.
-        pub fn $name(&self) -> Result<Page<$ret>> {
-            let url = self.route(concat!("/api/v1/", $url));
-            let response = self.client.$method(&url)
-                .headers(self.headers.clone())
-                .send()?;
+        doc_comment! {
+            concat!(
+                "Equivalent to `/api/v1/",
+                $url,
+                "`\n# Errors\nIf `access_token` is not set."),
+            pub fn $name(&self) -> Result<Page<$ret>> {
+                let url = self.route(concat!("/api/v1/", $url));
+                let response = self.client.$method(&url)
+                    .headers(self.headers.clone())
+                    .send()?;
 
-            Page::new(self, response)
+                Page::new(self, response)
+            }
+
         }
 
         paged_routes!{$($rest)*}
@@ -115,79 +118,83 @@ macro_rules! paged_routes {
 macro_rules! route {
 
     ((post multipart ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Equivalent to /api/v1/
-        #[doc = $url]
-        ///
-        #[doc = "# Errors"]
-        /// If `access_token` is not set.
-        pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
-            use reqwest::multipart::Form;
+        doc_comment! {
+            concat!(
+                "Equivalent to `/api/v1/",
+                $url,
+                "`\n# Errors\nIf `access_token` is not set."),
+            pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
+                use reqwest::multipart::Form;
 
-            let form_data = Form::new()
-            $(
-                .file(stringify!($param), $param.as_ref())?
-            )*;
+                let form_data = Form::new()
+                    $(
+                        .file(stringify!($param), $param.as_ref())?
+                     )*;
 
-            let response = self.client.post(&self.route(concat!("/api/v1/", $url)))
-                .headers(self.headers.clone())
-                .multipart(form_data)
-                .send()?;
+                let response = self.client.post(&self.route(concat!("/api/v1/", $url)))
+                    .headers(self.headers.clone())
+                    .multipart(form_data)
+                    .send()?;
 
-            let status = response.status().clone();
+                let status = response.status().clone();
 
-            if status.is_client_error() {
-                return Err(Error::Client(status));
-            } else if status.is_server_error() {
-                return Err(Error::Server(status));
+                if status.is_client_error() {
+                    return Err(Error::Client(status));
+                } else if status.is_server_error() {
+                    return Err(Error::Server(status));
+                }
+
+                deserialise(response)
             }
-
-            deserialise(response)
         }
 
         route!{$($rest)*}
     };
 
     (($method:ident ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Equivalent to /api/v1/
-        #[doc = $url]
-        ///
-        #[doc = "# Errors"]
-        /// If `access_token` is not set.
-        pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
+        doc_comment! {
+            concat!(
+                "Equivalent to `/api/v1/",
+                $url,
+                "`\n# Errors\nIf `access_token` is not set."),
 
-            let form_data = json!({
-                $(
-                    stringify!($param): $param,
-                )*
-            });
+            pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
 
-            let response = self.client.$method(&self.route(concat!("/api/v1/", $url)))
-                .headers(self.headers.clone())
-                .json(&form_data)
-                .send()?;
+                let form_data = json!({
+                    $(
+                        stringify!($param): $param,
+                    )*
+                });
 
-            let status = response.status().clone();
+                let response = self.client.$method(&self.route(concat!("/api/v1/", $url)))
+                    .headers(self.headers.clone())
+                    .json(&form_data)
+                    .send()?;
 
-            if status.is_client_error() {
-                return Err(Error::Client(status));
-            } else if status.is_server_error() {
-                return Err(Error::Server(status));
+                let status = response.status().clone();
+
+                if status.is_client_error() {
+                    return Err(Error::Client(status));
+                } else if status.is_server_error() {
+                    return Err(Error::Server(status));
+                }
+
+                deserialise(response)
             }
-
-            deserialise(response)
         }
 
         route!{$($rest)*}
     };
 
     (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Equivalent to /api/v1/
-        #[doc = $url]
-        ///
-        #[doc = "# Errors"]
-        /// If `access_token` is not set.
-        pub fn $name(&self) -> Result<$ret> {
-            self.$method(self.route(concat!("/api/v1/", $url)))
+        doc_comment! {
+            concat!(
+                "Equivalent to `/api/v1/",
+                $url,
+                "`\n# Errors\nIf `access_token` is not set."),
+            pub fn $name(&self) -> Result<$ret> {
+                self.$method(self.route(concat!("/api/v1/", $url)))
+            }
         }
 
         route!{$($rest)*}
@@ -200,13 +207,14 @@ macro_rules! route_id {
 
     ($(($method:ident) $name:ident: $url:expr => $ret:ty,)*) => {
         $(
-            /// Equivalent to /api/v1/
-            #[doc = $url]
-            ///
-            #[doc = "# Errors"]
-            /// If `access_token` is not set.
-            pub fn $name(&self, id: u64) -> Result<$ret> {
-                self.$method(self.route(&format!(concat!("/api/v1/", $url), id)))
+            doc_comment! {
+                concat!(
+                    "Equivalent to `/api/v1/",
+                    $url,
+                    "`\n# Errors\nIf `access_token` is not set."),
+                pub fn $name(&self, id: u64) -> Result<$ret> {
+                    self.$method(self.route(&format!(concat!("/api/v1/", $url), id)))
+                }
             }
          )*
     }
@@ -215,18 +223,19 @@ macro_rules! route_id {
 macro_rules! paged_routes_with_id {
 
     (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        /// Equivalent to /api/v1/
-        #[doc = $url]
-        ///
-        #[doc = "# Errors"]
-        /// If `access_token` is not set.
-        pub fn $name(&self, id: &str) -> Result<Page<$ret>> {
-            let url = self.route(&format!(concat!("/api/v1/", $url), id));
-            let response = self.client.$method(&url)
-                .headers(self.headers.clone())
-                .send()?;
+        doc_comment! {
+            concat!(
+                "Equivalent to `/api/v1/",
+                $url,
+                "`\n# Errors\nIf `access_token` is not set."),
+            pub fn $name(&self, id: &str) -> Result<Page<$ret>> {
+                let url = self.route(&format!(concat!("/api/v1/", $url), id));
+                let response = self.client.$method(&url)
+                    .headers(self.headers.clone())
+                    .send()?;
 
-            Page::new(self, response)
+                Page::new(self, response)
+            }
         }
 
         route!{$($rest)*}
