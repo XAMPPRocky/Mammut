@@ -29,6 +29,17 @@ into_pageiter!(Notification);
 into_pageiter!(Report);
 into_pageiter!(Relationship);
 
+/// Abstracts away the `next_page` logic into a single stream of items
+///
+/// ```ignore
+/// # extern crate mammut
+/// # use mammut::Mastodon;
+/// let client = Mastodon::from_data(data);
+/// let statuses = client.statuses("user-id", None);
+/// for status in statuses.into_iter() {
+///   // do something with `status`
+/// }
+/// ```
 pub struct PageIter<'a, T: Clone + for<'de> Deserialize<'de>> {
     page: Page<'a, T>,
     buffer: Vec<T>,

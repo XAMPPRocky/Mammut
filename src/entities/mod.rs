@@ -6,7 +6,7 @@ pub mod instance;
 pub mod list;
 pub mod mention;
 pub mod notification;
-pub mod pageiter;
+mod pageiter;
 pub mod relationship;
 pub mod report;
 pub mod search_result;
