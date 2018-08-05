@@ -338,7 +338,7 @@ pub struct ApiError {
 /// ```
 /// # extern crate mammut;
 /// # use mammut::StatusesRequest;
-/// let request = StatusesRequest::default()
+/// let request = StatusesRequest::new()
 ///                               .only_media()
 ///                               .pinned()
 ///                               .since_id("foo");
@@ -355,6 +355,10 @@ pub struct StatusesRequest<'a> {
 }
 
 impl<'a> StatusesRequest<'a> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn only_media(mut self) -> Self {
         self.only_media = true;
         self
@@ -588,12 +592,10 @@ impl Mastodon {
     pub fn statuses<'a, S>(&self, id: &str, request: S) -> Result<Page<Status>>
             where S: Into<Option<StatusesRequest<'a>>>
     {
-        let url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
-
         let url = if let Some(request) = request.into() {
             request.to_querystring()
         } else {
-            url
+            format!("{}/api/v1/accounts/{}/statuses", self.base, id)
         };
 
         let response = self.client.get(&url)
