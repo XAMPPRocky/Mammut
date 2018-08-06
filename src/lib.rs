@@ -601,11 +601,11 @@ impl Mastodon {
     pub fn statuses<'a, S>(&self, id: &str, request: S) -> Result<Page<Status>>
             where S: Into<Option<StatusesRequest<'a>>>
     {
-        let url = if let Some(request) = request.into() {
-            request.to_querystring()
-        } else {
-            format!("{}/api/v1/accounts/{}/statuses", self.base, id)
-        };
+        let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
+
+        if let Some(request) = request.into() {
+            url = format!("{}/{}", url, request.to_querystring());
+        }
 
         let response = self.client.get(&url)
             .headers(self.headers.clone())
