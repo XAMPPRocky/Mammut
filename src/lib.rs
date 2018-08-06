@@ -604,7 +604,7 @@ impl Mastodon {
         let mut url = format!("{}/api/v1/accounts/{}/statuses", self.base, id);
 
         if let Some(request) = request.into() {
-            url = format!("{}/{}", url, request.to_querystring());
+            url = format!("{}{}", url, request.to_querystring());
         }
 
         let response = self.client.get(&url)
