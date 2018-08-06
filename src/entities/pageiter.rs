@@ -1,33 +1,5 @@
 use page::Page;
-use entities::{
-    account::Account,
-    notification::Notification,
-    relationship::Relationship,
-    report::Report,
-    status::{Emoji, Status}
-};
 use serde::Deserialize;
-
-macro_rules! into_pageiter {
-    ($typ:ty) => {
-        impl<'a> IntoIterator for Page<'a, $typ> {
-            type Item = $typ;
-            type IntoIter = PageIter<'a, $typ>;
-
-            fn into_iter(self) -> PageIter<'a, $typ> {
-                PageIter::new(self)
-            }
-        }
-    }
-}
-
-into_pageiter!(Status);
-into_pageiter!(Account);
-into_pageiter!(String);
-into_pageiter!(Emoji);
-into_pageiter!(Notification);
-into_pageiter!(Report);
-into_pageiter!(Relationship);
 
 /// Abstracts away the `next_page` logic into a single stream of items
 ///
@@ -48,7 +20,7 @@ pub struct PageIter<'a, T: Clone + for<'de> Deserialize<'de>> {
 }
 
 impl<'a, T: Clone + for<'de> Deserialize<'de>> PageIter<'a, T> {
-    fn new(page: Page<'a, T>) -> PageIter<'a, T> {
+    pub(crate) fn new(page: Page<'a, T>) -> PageIter<'a, T> {
         PageIter {
             page: page,
             buffer: vec![],

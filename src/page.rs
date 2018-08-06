@@ -3,6 +3,7 @@ use reqwest::Response;
 use reqwest::header::{Link, RelationType};
 use serde::Deserialize;
 use url::Url;
+use entities::pageiter::PageIter;
 
 pub struct Page<'a, T: for<'de> Deserialize<'de>> {
     mastodon: &'a Mastodon,
@@ -53,6 +54,11 @@ impl<'a, T: for<'de> Deserialize<'de>> Page<'a, T> {
     }
 }
 
+impl<'a, T: Clone + for<'de> Deserialize<'de>> Page<'a, T> {
+    pub fn items_iter(self) -> PageIter<'a, T> {
+        PageIter::new(self)
+    }
+}
 
 fn get_links(response: &Response) -> Result<(Option<Url>, Option<Url>)> {
     let mut prev = None;

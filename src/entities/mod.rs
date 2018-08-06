@@ -6,7 +6,7 @@ pub mod instance;
 pub mod list;
 pub mod mention;
 pub mod notification;
-mod pageiter;
+pub(crate) mod pageiter;
 pub mod relationship;
 pub mod report;
 pub mod search_result;
