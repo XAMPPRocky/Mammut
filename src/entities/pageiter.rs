@@ -55,6 +55,9 @@ impl<'a, T: Clone+ for<'de> Deserialize<'de>> Iterator for PageIter<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.use_initial {
+            if self.page.initial_items.is_empty() {
+                return None;
+            }
             let idx = self.cur_idx;
             if self.cur_idx == self.page.initial_items.len() - 1 {
                 self.cur_idx = 0;
