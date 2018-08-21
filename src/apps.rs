@@ -2,10 +2,10 @@ use std::fmt;
 
 /// Builder struct for defining your application.
 /// ```
-/// use mammut::apps::{AppBuilder, Scopes};
+/// use elefren::apps::{AppBuilder, Scopes};
 ///
 /// let app = AppBuilder {
-///     client_name: "mammut_test",
+///     client_name: "elefren_test",
 ///     redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
 ///     scopes: Scopes::Read,
 ///     website: None,
