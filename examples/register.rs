@@ -1,6 +1,8 @@
 extern crate mammut;
 extern crate toml;
 
+pub use self::mammut::MastodonClient;
+
 use std::{
     error::Error,
     fs,

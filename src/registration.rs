@@ -52,7 +52,7 @@ impl Registration {
     /// #    try().unwrap();
     /// # }
     /// # fn try() -> mammut::Result<()> {
-    /// use mammut::Registration;
+    /// use mammut::{MastodonClient, Registration};
     /// use mammut::apps::{AppBuilder, Scopes};
     ///
     /// let app = AppBuilder {
