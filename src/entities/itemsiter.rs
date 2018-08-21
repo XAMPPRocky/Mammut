@@ -5,7 +5,7 @@ use serde::Deserialize;
 ///
 /// ```no_run
 /// # extern crate mammut;
-/// # use mammut::{Data, Mastodon};
+/// # use mammut::{Data, Mastodon, MastodonClient};
 /// # use std::error::Error;
 /// # fn main() -> Result<(), Box<Error>> {
 /// # let data = Data {

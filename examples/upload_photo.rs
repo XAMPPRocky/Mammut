@@ -1,5 +1,6 @@
 mod register;
 
+use register::MastodonClient;
 use std::error;
 
 fn main() -> Result<(), Box<error::Error>> {
