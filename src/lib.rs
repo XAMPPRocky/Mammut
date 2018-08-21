@@ -1,7 +1,7 @@
 //! # Mammut: API Wrapper around the Mastodon API.
 //!
 //! Most of the api is documented on [Mastodon's
-//! github](https://github.com/tootsuite/mastodon/blob/master/docs/Using-the-API/API.md#tag)
+//! github](https://github.com/tootsuite/documentation/blob/master/Using-the-API/API.md)
 //!
 //! ```no_run
 //! # extern crate mammut;
