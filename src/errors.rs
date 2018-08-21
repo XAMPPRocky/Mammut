@@ -1,7 +1,7 @@
 use std::{
-    io,
     fmt,
-    error
+    error,
+    io::Error as IoError
 };
 
 use json::Error as SerdeError;
@@ -28,7 +28,7 @@ pub enum Error {
     Http(HttpError),
     /// Wrapper around the `std::io::Error` struct.
     #[serde(skip_deserializing)]
-    Io(io::Error),
+    Io(IoError),
     /// Wrapper around the `url::ParseError` struct.
     #[serde(skip_deserializing)]
     Url(UrlError),
@@ -86,3 +86,22 @@ pub struct ApiError {
     pub error_description: Option<String>,
 }
 
+macro_rules! from {
+    ($($typ:ident, $variant:ident,)*) => {
+        $(
+            impl From<$typ> for Error {
+                fn from(from: $typ) -> Self {
+                    use Error::*;
+                    $variant(from)
+                }
+            }
+        )*
+    }
+}
+
+from! {
+    HttpError, Http,
+    IoError, Io,
+    SerdeError, Serde,
+    UrlError, Url,
+}

@@ -61,14 +61,10 @@ pub mod prelude {
 }
 
 use std::borrow::Cow;
-use std::io::Error as IoError;
 use std::ops;
 
-use json::Error as SerdeError;
-use reqwest::Error as HttpError;
 use reqwest::{Client, Response};
 use reqwest::header::{Authorization, Bearer, Headers};
-use url::ParseError as UrlError;
 
 use entities::prelude::*;
 pub use status_builder::StatusBuilder;
@@ -686,25 +682,6 @@ impl ops::Deref for Mastodon {
     }
 }
 
-macro_rules! from {
-    ($($typ:ident, $variant:ident,)*) => {
-        $(
-            impl From<$typ> for Error {
-                fn from(from: $typ) -> Self {
-                    use Error::*;
-                    $variant(from)
-                }
-            }
-        )*
-    }
-}
-
-from! {
-    HttpError, Http,
-    IoError, Io,
-    SerdeError, Serde,
-    UrlError, Url,
-}
 
 // Convert the HTTP response body from JSON. Pass up deserialization errors
 // transparently.
