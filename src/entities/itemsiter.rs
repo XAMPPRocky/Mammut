@@ -3,14 +3,25 @@ use serde::Deserialize;
 
 /// Abstracts away the `next_page` logic into a single stream of items
 ///
-/// ```ignore
-/// # extern crate mammut
-/// # use mammut::Mastodon;
+/// ```no_run
+/// # extern crate mammut;
+/// # use mammut::{Data, Mastodon};
+/// # use std::error::Error;
+/// # fn main() -> Result<(), Box<Error>> {
+/// # let data = Data {
+/// #   base: "".into(),
+/// #   client_id: "".into(),
+/// #   client_secret: "".into(),
+/// #   redirect: "".into(),
+/// #   token: "".into(),
+/// # };
 /// let client = Mastodon::from_data(data);
-/// let statuses = client.statuses("user-id", None);
-/// for status in statuses.into_iter() {
+/// let statuses = client.statuses("user-id", false, false)?;
+/// for status in statuses.items_iter() {
 ///   // do something with `status`
 /// }
+/// # Ok(())
+/// # }
 /// ```
 pub struct ItemsIter<'a, T: Clone + for<'de> Deserialize<'de>> {
     page: Page<'a, T>,
