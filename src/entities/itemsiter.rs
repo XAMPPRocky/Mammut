@@ -12,16 +12,16 @@ use serde::Deserialize;
 ///   // do something with `status`
 /// }
 /// ```
-pub struct PageIter<'a, T: Clone + for<'de> Deserialize<'de>> {
+pub struct ItemsIter<'a, T: Clone + for<'de> Deserialize<'de>> {
     page: Page<'a, T>,
     buffer: Vec<T>,
     cur_idx: usize,
     use_initial: bool,
 }
 
-impl<'a, T: Clone + for<'de> Deserialize<'de>> PageIter<'a, T> {
-    pub(crate) fn new(page: Page<'a, T>) -> PageIter<'a, T> {
-        PageIter {
+impl<'a, T: Clone + for<'de> Deserialize<'de>> ItemsIter<'a, T> {
+    pub(crate) fn new(page: Page<'a, T>) -> ItemsIter<'a, T> {
+        ItemsIter {
             page: page,
             buffer: vec![],
             cur_idx: 0,
@@ -50,7 +50,7 @@ impl<'a, T: Clone + for<'de> Deserialize<'de>> PageIter<'a, T> {
     }
 }
 
-impl<'a, T: Clone+ for<'de> Deserialize<'de>> Iterator for PageIter<'a, T> {
+impl<'a, T: Clone+ for<'de> Deserialize<'de>> Iterator for ItemsIter<'a, T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
