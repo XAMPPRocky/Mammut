@@ -13,39 +13,29 @@ use url::ParseError as UrlError;
 pub type Result<T> = ::std::result::Result<T, Error>;
 
 /// enum of possible errors encountered using the mastodon API.
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
+#[derive(Debug)]
 pub enum Error {
     /// Error from the Mastodon API. This typically means something went
     /// wrong with your authentication or data.
     Api(ApiError),
     /// Error deserialising to json. Typically represents a breaking change in
     /// the Mastodon API
-    #[serde(skip_deserializing)]
     Serde(SerdeError),
     /// Error encountered in the HTTP backend while requesting a route.
-    #[serde(skip_deserializing)]
     Http(HttpError),
     /// Wrapper around the `std::io::Error` struct.
-    #[serde(skip_deserializing)]
     Io(IoError),
     /// Wrapper around the `url::ParseError` struct.
-    #[serde(skip_deserializing)]
     Url(UrlError),
     /// Missing Client Id.
-    #[serde(skip_deserializing)]
     ClientIdRequired,
     /// Missing Client Secret.
-    #[serde(skip_deserializing)]
     ClientSecretRequired,
     /// Missing Access Token.
-    #[serde(skip_deserializing)]
     AccessTokenRequired,
     /// Generic client error.
-    #[serde(skip_deserializing)]
     Client(StatusCode),
     /// Generic server error.
-    #[serde(skip_deserializing)]
     Server(StatusCode),
 }
 
@@ -104,4 +94,5 @@ from! {
     IoError, Io,
     SerdeError, Serde,
     UrlError, Url,
+    ApiError, Api,
 }
