@@ -16,7 +16,7 @@ use serde::Deserialize;
 /// #   token: "".into(),
 /// # };
 /// let client = Mastodon::from_data(data);
-/// let statuses = client.statuses("user-id", false, false)?;
+/// let statuses = client.statuses("user-id", None)?;
 /// for status in statuses.items_iter() {
 ///   // do something with `status`
 /// }
