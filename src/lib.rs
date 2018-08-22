@@ -438,8 +438,18 @@ impl Mastodon {
             }
         }
 
+    methods![get, post, delete,];
+
+    fn route(&self, url: &str) -> String {
+        let mut s = (*self.base).to_owned();
+        s += url;
+        s
+    }
+}
+
+impl From<Data> for Mastodon {
     /// Creates a mastodon instance from the data struct.
-    pub fn from_data(data: Data) -> Self {
+    fn from(data: Data) -> Mastodon {
         let mut headers = Headers::new();
         headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
 
@@ -448,14 +458,6 @@ impl Mastodon {
             headers: headers,
             data: data,
         }
-    }
-
-    methods![get, post, delete,];
-
-    fn route(&self, url: &str) -> String {
-        let mut s = (*self.base).to_owned();
-        s += url;
-        s
     }
 }
 
@@ -586,7 +588,7 @@ impl MastodonClient for Mastodon {
     /// #   redirect: "".into(),
     /// #   token: "".into(),
     /// # };
-    /// let client = Mastodon::from_data(data);
+    /// let client = Mastodon::from(data);
     /// let statuses = client.statuses("user-id", None)?;
     /// # Ok(())
     /// # }
@@ -604,7 +606,7 @@ impl MastodonClient for Mastodon {
     /// #   redirect: "".into(),
     /// #   token: "".into(),
     /// # };
-    /// let client = Mastodon::from_data(data);
+    /// let client = Mastodon::from(data);
     /// let request = StatusesRequest::default()
     ///                               .only_media();
     /// let statuses = client.statuses("user-id", request)?;

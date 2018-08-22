@@ -1,7 +1,7 @@
 extern crate elefren;
 extern crate toml;
 
-pub use self::elefren::MastodonClient;
+pub use self::elefren::{Data, MastodonClient};
 
 use std::{
     error::Error,
@@ -28,7 +28,8 @@ fn main() -> Result<(), Box<Error>> {
 #[allow(dead_code)]
 pub fn get_mastodon_data() -> Result<Mastodon, Box<Error>> {
     if let Ok(config) = fs::read_to_string("mastodon-data.toml") {
-        Ok(Mastodon::from_data(toml::from_str(&config)?))
+        let data: Data = toml::from_str(&config)?;
+        Ok(Mastodon::from(data))
     } else {
         register()
     }

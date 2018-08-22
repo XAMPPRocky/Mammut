@@ -25,7 +25,7 @@ fn main() {
             let mut config = String::new();
             file.read_to_string(&mut config).unwrap();
             let data: Data = toml::from_str(&config).unwrap();
-            Mastodon::from_data(data)
+            Mastodon::from(data)
         },
         Err(_) => register(),
     };
