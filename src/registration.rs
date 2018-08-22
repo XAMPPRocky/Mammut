@@ -18,7 +18,12 @@ pub struct Registration {
 struct OAuth {
     client_id: String,
     client_secret: String,
+    #[serde(default = "default_redirect_uri")]
     redirect_uri: String,
+}
+
+fn default_redirect_uri() -> String {
+    "urn:ietf:wg:oauth:2.0:oob".to_string()
 }
 
 #[derive(Deserialize)]
