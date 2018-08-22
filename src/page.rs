@@ -55,6 +55,36 @@ impl<'a, T: for<'de> Deserialize<'de>> Page<'a, T> {
 }
 
 impl<'a, T: Clone + for<'de> Deserialize<'de>> Page<'a, T> {
+    /// Returns an iterator that provides a stream of `T`s
+    ///
+    /// This abstracts away the process of iterating over each item in a page, then making an http
+    /// call, then iterating over each item in the new page, etc. The iterator provides a stream of
+    /// `T`s, calling `self.next_page()` when necessary to get more of them, until there are no more
+    /// items.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # extern crate mammut;
+    /// # use std::error::Error;
+    /// use mammut::{Mastodon, Data, StatusesRequest};
+    /// # fn main() -> Result<(), Box<Error>> {
+    /// #   let data = Data {
+    /// #       base: "".into(),
+    /// #       client_id: "".into(),
+    /// #       client_secret: "".into(),
+    /// #       redirect: "".into(),
+    /// #       token: "".into(),
+    /// #   };
+    /// let mastodon = Mastodon::from_data(data);
+    /// let req = StatusesRequest::new();
+    /// let resp = mastodon.statuses("some-id", req)?;
+    /// for status in resp.items_iter() {
+    ///     // do something with status
+    /// }
+    /// #   Ok(())
+    /// # }
+    /// ```
     pub fn items_iter(self) -> impl Iterator<Item = T> + 'a
             where T: 'a
     {

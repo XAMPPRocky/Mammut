@@ -23,7 +23,7 @@ use serde::Deserialize;
 /// # Ok(())
 /// # }
 /// ```
-pub struct ItemsIter<'a, T: Clone + for<'de> Deserialize<'de>> {
+pub(crate) struct ItemsIter<'a, T: Clone + for<'de> Deserialize<'de>> {
     page: Page<'a, T>,
     buffer: Vec<T>,
     cur_idx: usize,
