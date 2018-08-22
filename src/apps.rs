@@ -1,8 +1,18 @@
 use std::fmt;
 
+pub mod prelude {
+    pub use {
+        apps::{
+            AppBuilder,
+            Scopes
+        },
+        registration::Registration
+    };
+}
+
 /// Builder struct for defining your application.
 /// ```
-/// use elefren::apps::{AppBuilder, Scopes};
+/// use elefren::apps::prelude::*;
 ///
 /// let app = AppBuilder {
 ///     client_name: "elefren_test",

@@ -34,7 +34,7 @@ struct AccessToken {
 impl Registration {
     /// Construct a new registration process to the instance of the `base` url.
     /// ```
-    /// use elefren::registration::Registration;
+    /// use elefren::apps::prelude::*;
     ///
     /// let registration = Registration::new("https://mastodon.social");
     /// ```
@@ -57,8 +57,8 @@ impl Registration {
     /// #    try().unwrap();
     /// # }
     /// # fn try() -> elefren::Result<()> {
-    /// use elefren::{MastodonClient, Registration};
-    /// use elefren::apps::{AppBuilder, Scopes};
+    /// use elefren::prelude::*;
+    /// use elefren::apps::prelude::*;
     ///
     /// let app = AppBuilder {
     ///     client_name: "elefren_test",

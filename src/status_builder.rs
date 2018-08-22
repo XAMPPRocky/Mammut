@@ -41,7 +41,7 @@ impl StatusBuilder {
 
     /// Create a new status with text.
     /// ```
-    /// use elefren::status_builder::StatusBuilder;
+    /// use elefren::prelude::*;
     ///
     /// let status = StatusBuilder::new("Hello World!".into());
     /// ```

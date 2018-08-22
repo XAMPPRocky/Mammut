@@ -5,7 +5,7 @@ use serde::Deserialize;
 ///
 /// ```no_run
 /// # extern crate elefren;
-/// # use elefren::{Data, Mastodon, MastodonClient};
+/// # use elefren::prelude::*;
 /// # use std::error::Error;
 /// # fn main() -> Result<(), Box<Error>> {
 /// # let data = Data {

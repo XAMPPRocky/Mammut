@@ -9,8 +9,8 @@
 //! #    try().unwrap();
 //! # }
 //! # fn try() -> elefren::Result<()> {
-//! use elefren::{MastodonClient, Registration};
-//! use elefren::apps::{AppBuilder, Scopes};
+//! use elefren::prelude::*;
+//! use elefren::apps::prelude::*;
 //!
 //! let app = AppBuilder {
 //!     client_name: "elefren_test",
@@ -74,7 +74,7 @@ pub mod requests;
 #[macro_use] mod macros;
 /// Automatically import the things you need
 pub mod prelude {
-    pub use {Mastodon, MastodonClient, StatusBuilder, StatusesRequest};
+    pub use {Data, Mastodon, MastodonClient, StatusBuilder, StatusesRequest};
 }
 
 /// Your mastodon application client, handles all requests to and from Mastodon.
@@ -324,7 +324,7 @@ impl MastodonClient for Mastodon {
     ///
     /// ```no_run
     /// # extern crate elefren;
-    /// # use elefren::{Data, Mastodon, MastodonClient};
+    /// # use elefren::prelude::*;
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<Error>> {
     /// # let data = Data {
@@ -342,7 +342,7 @@ impl MastodonClient for Mastodon {
     ///
     /// ```no_run
     /// # extern crate elefren;
-    /// # use elefren::{Data, Mastodon, MastodonClient, StatusesRequest};
+    /// # use elefren::prelude::*;
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<Error>> {
     /// # let data = Data {
