@@ -4,8 +4,8 @@ use serde::Deserialize;
 /// Abstracts away the `next_page` logic into a single stream of items
 ///
 /// ```no_run
-/// # extern crate mammut;
-/// # use mammut::{Data, Mastodon, MastodonClient};
+/// # extern crate elefren;
+/// # use elefren::{Data, Mastodon, MastodonClient};
 /// # use std::error::Error;
 /// # fn main() -> Result<(), Box<Error>> {
 /// # let data = Data {

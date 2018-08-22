@@ -1,12 +1,12 @@
 [package]
-name = "mammut"
-version = "0.11.0"
+name = "elefren"
+version = "0.12.0"
 
 description = "A wrapper around the Mastodon API."
-authors = ["Aaron Power <theaaronepower@gmail.com>"]
+authors = ["Aaron Power <theaaronepower@gmail.com>", "Paul Woolcock <paul@woolcock.us>"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/Aaronepower/mammut.git"
+repository = "https://github.com/pwoolcoc/elefren.git"
 keywords = ["api", "web", "social", "mastodon", "wrapper"]
 categories = ["web-programming", "http-client"]
 

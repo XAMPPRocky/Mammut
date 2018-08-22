@@ -41,7 +41,7 @@ impl StatusBuilder {
 
     /// Create a new status with text.
     /// ```
-    /// use mammut::status_builder::StatusBuilder;
+    /// use elefren::status_builder::StatusBuilder;
     ///
     /// let status = StatusBuilder::new("Hello World!".into());
     /// ```

@@ -1,19 +1,19 @@
-//! # Mammut: API Wrapper around the Mastodon API.
+//! # Elefren: API Wrapper around the Mastodon API.
 //!
 //! Most of the api is documented on [Mastodon's
 //! github](https://github.com/tootsuite/mastodon/blob/master/docs/Using-the-API/API.md#tag)
 //!
 //! ```no_run
-//! # extern crate mammut;
+//! # extern crate elefren;
 //! # fn main() {
 //! #    try().unwrap();
 //! # }
-//! # fn try() -> mammut::Result<()> {
-//! use mammut::{MastodonClient, Registration};
-//! use mammut::apps::{AppBuilder, Scopes};
+//! # fn try() -> elefren::Result<()> {
+//! use elefren::{MastodonClient, Registration};
+//! use elefren::apps::{AppBuilder, Scopes};
 //!
 //! let app = AppBuilder {
-//!     client_name: "mammut_test",
+//!     client_name: "elefren_test",
 //!     redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
 //!     scopes: Scopes::Read,
 //!     website: None,
@@ -345,8 +345,8 @@ pub struct ApiError {
 /// # Example
 ///
 /// ```
-/// # extern crate mammut;
-/// # use mammut::StatusesRequest;
+/// # extern crate elefren;
+/// # use elefren::StatusesRequest;
 /// let request = StatusesRequest::new()
 ///                               .only_media()
 ///                               .pinned()
@@ -650,8 +650,8 @@ impl MastodonClient for Mastodon {
     /// # Example
     ///
     /// ```no_run
-    /// # extern crate mammut;
-    /// # use mammut::{Data, Mastodon, MastodonClient};
+    /// # extern crate elefren;
+    /// # use elefren::{Data, Mastodon, MastodonClient};
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<Error>> {
     /// # let data = Data {
@@ -668,8 +668,8 @@ impl MastodonClient for Mastodon {
     /// ```
     ///
     /// ```no_run
-    /// # extern crate mammut;
-    /// # use mammut::{Data, Mastodon, MastodonClient, StatusesRequest};
+    /// # extern crate elefren;
+    /// # use elefren::{Data, Mastodon, MastodonClient, StatusesRequest};
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<Error>> {
     /// # let data = Data {
