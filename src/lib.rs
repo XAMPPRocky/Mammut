@@ -43,6 +43,20 @@ extern crate reqwest;
 extern crate serde;
 extern crate url;
 
+use std::borrow::Cow;
+use std::ops;
+
+use reqwest::{Client, Response};
+use reqwest::header::{Authorization, Bearer, Headers};
+
+use entities::prelude::*;
+use page::Page;
+
+pub use status_builder::StatusBuilder;
+pub use requests::statuses::StatusesRequest;
+pub use errors::{Result, Error, ApiError};
+pub use registration::Registration;
+
 /// Registering your App
 pub mod apps;
 /// Constructing a status
@@ -55,192 +69,13 @@ pub mod registration;
 pub mod page;
 /// Errors
 pub mod errors;
-
+/// Requests
+pub mod requests;
+#[macro_use] mod macros;
+/// Automatically import the things you need
 pub mod prelude {
     pub use {Mastodon, MastodonClient, StatusBuilder, StatusesRequest};
 }
-
-use std::borrow::Cow;
-use std::ops;
-
-use reqwest::{Client, Response};
-use reqwest::header::{Authorization, Bearer, Headers};
-
-use entities::prelude::*;
-pub use status_builder::StatusBuilder;
-use page::Page;
-pub use errors::{Result, Error, ApiError};
-
-pub use registration::Registration;
-
-macro_rules! methods {
-    ($($method:ident,)+) => {
-        $(
-            fn $method<T: for<'de> serde::Deserialize<'de>>(&self, url: String)
-            -> Result<T>
-            {
-                let response = self.client.$method(&url)
-                    .headers(self.headers.clone())
-                    .send()?;
-
-                deserialise(response)
-            }
-         )+
-    };
-}
-
-macro_rules! paged_routes {
-
-    (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        doc_comment! {
-            concat!(
-                "Equivalent to `/api/v1/",
-                $url,
-                "`\n# Errors\nIf `access_token` is not set."),
-            fn $name(&self) -> Result<Page<$ret>> {
-                let url = self.route(concat!("/api/v1/", $url));
-                let response = self.client.$method(&url)
-                    .headers(self.headers.clone())
-                    .send()?;
-
-                Page::new(self, response)
-            }
-
-        }
-
-        paged_routes!{$($rest)*}
-    };
-
-    () => {}
-}
-
-macro_rules! route {
-
-    ((post multipart ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        doc_comment! {
-            concat!(
-                "Equivalent to `/api/v1/",
-                $url,
-                "`\n# Errors\nIf `access_token` is not set."),
-            fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
-                use reqwest::multipart::Form;
-
-                let form_data = Form::new()
-                    $(
-                        .file(stringify!($param), $param.as_ref())?
-                     )*;
-
-                let response = self.client.post(&self.route(concat!("/api/v1/", $url)))
-                    .headers(self.headers.clone())
-                    .multipart(form_data)
-                    .send()?;
-
-                let status = response.status().clone();
-
-                if status.is_client_error() {
-                    return Err(Error::Client(status));
-                } else if status.is_server_error() {
-                    return Err(Error::Server(status));
-                }
-
-                deserialise(response)
-            }
-        }
-
-        route!{$($rest)*}
-    };
-
-    (($method:ident ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        doc_comment! {
-            concat!(
-                "Equivalent to `/api/v1/",
-                $url,
-                "`\n# Errors\nIf `access_token` is not set."),
-
-            fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
-
-                let form_data = json!({
-                    $(
-                        stringify!($param): $param,
-                    )*
-                });
-
-                let response = self.client.$method(&self.route(concat!("/api/v1/", $url)))
-                    .headers(self.headers.clone())
-                    .json(&form_data)
-                    .send()?;
-
-                let status = response.status().clone();
-
-                if status.is_client_error() {
-                    return Err(Error::Client(status));
-                } else if status.is_server_error() {
-                    return Err(Error::Server(status));
-                }
-
-                deserialise(response)
-            }
-        }
-
-        route!{$($rest)*}
-    };
-
-    (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        doc_comment! {
-            concat!(
-                "Equivalent to `/api/v1/",
-                $url,
-                "`\n# Errors\nIf `access_token` is not set."),
-            fn $name(&self) -> Result<$ret> {
-                self.$method(self.route(concat!("/api/v1/", $url)))
-            }
-        }
-
-        route!{$($rest)*}
-    };
-
-    () => {}
-}
-
-macro_rules! route_id {
-
-    ($(($method:ident) $name:ident: $url:expr => $ret:ty,)*) => {
-        $(
-            doc_comment! {
-                concat!(
-                    "Equivalent to `/api/v1/",
-                    $url,
-                    "`\n# Errors\nIf `access_token` is not set."),
-                fn $name(&self, id: u64) -> Result<$ret> {
-                    self.$method(self.route(&format!(concat!("/api/v1/", $url), id)))
-                }
-            }
-         )*
-    }
-
-}
-macro_rules! paged_routes_with_id {
-
-    (($method:ident) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        doc_comment! {
-            concat!(
-                "Equivalent to `/api/v1/",
-                $url,
-                "`\n# Errors\nIf `access_token` is not set."),
-            fn $name(&self, id: &str) -> Result<Page<$ret>> {
-                let url = self.route(&format!(concat!("/api/v1/", $url), id));
-                let response = self.client.$method(&url)
-                    .headers(self.headers.clone())
-                    .send()?;
-
-                Page::new(self, response)
-            }
-        }
-
-        route!{$($rest)*}
-    };
-}
-
 
 /// Your mastodon application client, handles all requests to and from Mastodon.
 #[derive(Clone, Debug)]
@@ -267,97 +102,8 @@ pub struct Data {
     pub token: Cow<'static, str>,
 }
 
-/// # Example
-///
-/// ```
-/// # extern crate elefren;
-/// # use elefren::StatusesRequest;
-/// let request = StatusesRequest::new()
-///                               .only_media()
-///                               .pinned()
-///                               .since_id("foo");
-/// # assert_eq!(&request.to_querystring()[..], "?only_media=1&pinned=1&since_id=foo");
-/// ```
-#[derive(Clone, Debug, Default)]
-pub struct StatusesRequest<'a> {
-    only_media: bool,
-    exclude_replies: bool,
-    pinned: bool,
-    max_id: Option<Cow<'a, str>>,
-    since_id: Option<Cow<'a, str>>,
-    limit: Option<usize>,
-}
-
-impl<'a> StatusesRequest<'a> {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn only_media(mut self) -> Self {
-        self.only_media = true;
-        self
-    }
-
-    pub fn exclude_replies(mut self) -> Self {
-        self.exclude_replies = true;
-        self
-    }
-
-    pub fn pinned(mut self) -> Self {
-        self.pinned = true;
-        self
-    }
-
-    pub fn max_id<S: Into<Cow<'a, str>>>(mut self, max_id: S) -> Self {
-        self.max_id = Some(max_id.into());
-        self
-    }
-
-    pub fn since_id<S: Into<Cow<'a, str>>>(mut self, since_id: S) -> Self {
-        self.since_id = Some(since_id.into());
-        self
-    }
-
-    pub fn limit(mut self, limit: usize) -> Self {
-        self.limit = Some(limit);
-        self
-    }
-
-    pub fn to_querystring(&self) -> String {
-        let mut opts = vec![];
-
-        if self.only_media {
-            opts.push("only_media=1".into());
-        }
-
-        if self.exclude_replies {
-            opts.push("exclude_replies=1".into());
-        }
-
-        if self.pinned {
-            opts.push("pinned=1".into());
-        }
-
-        if let Some(ref max_id) = self.max_id {
-            opts.push(format!("max_id={}", max_id));
-        }
-
-        if let Some(ref since_id) = self.since_id {
-            opts.push(format!("since_id={}", since_id));
-        }
-
-        if let Some(limit) = self.limit {
-            opts.push(format!("limit={}", limit));
-        }
-
-        if opts.is_empty() {
-            String::new()
-        } else {
-            format!("?{}", opts.join("&"))
-        }
-    }
-}
-
+/// Represents the set of methods that a Mastodon Client can do, so that
+/// implementations might be swapped out for testing
 #[allow(unused)]
 pub trait MastodonClient {
     fn favourites(&self) -> Result<Page<Status>> { unimplemented!("This method was not implemented"); }
