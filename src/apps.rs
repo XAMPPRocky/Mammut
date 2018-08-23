@@ -1,11 +1,21 @@
 use std::fmt;
 
+pub mod prelude {
+    pub use {
+        apps::{
+            AppBuilder,
+            Scopes
+        },
+        registration::Registration
+    };
+}
+
 /// Builder struct for defining your application.
 /// ```
-/// use mammut::apps::{AppBuilder, Scopes};
+/// use elefren::apps::prelude::*;
 ///
 /// let app = AppBuilder {
-///     client_name: "mammut_test",
+///     client_name: "elefren_test",
 ///     redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
 ///     scopes: Scopes::Read,
 ///     website: None,

@@ -18,7 +18,12 @@ pub struct Registration {
 struct OAuth {
     client_id: String,
     client_secret: String,
+    #[serde(default = "default_redirect_uri")]
     redirect_uri: String,
+}
+
+fn default_redirect_uri() -> String {
+    "urn:ietf:wg:oauth:2.0:oob".to_string()
 }
 
 #[derive(Deserialize)]
@@ -29,7 +34,7 @@ struct AccessToken {
 impl Registration {
     /// Construct a new registration process to the instance of the `base` url.
     /// ```
-    /// use mammut::registration::Registration;
+    /// use elefren::apps::prelude::*;
     ///
     /// let registration = Registration::new("https://mastodon.social");
     /// ```
@@ -47,16 +52,16 @@ impl Registration {
     /// Register the application with the server from the `base` url.
     ///
     /// ```no_run
-    /// # extern crate mammut;
+    /// # extern crate elefren;
     /// # fn main() {
     /// #    try().unwrap();
     /// # }
-    /// # fn try() -> mammut::Result<()> {
-    /// use mammut::Registration;
-    /// use mammut::apps::{AppBuilder, Scopes};
+    /// # fn try() -> elefren::Result<()> {
+    /// use elefren::prelude::*;
+    /// use elefren::apps::prelude::*;
     ///
     /// let app = AppBuilder {
-    ///     client_name: "mammut_test",
+    ///     client_name: "elefren_test",
     ///     redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
     ///     scopes: Scopes::Read,
     ///     website: None,

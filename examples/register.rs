@@ -1,5 +1,7 @@
-extern crate mammut;
+extern crate elefren;
 extern crate toml;
+
+pub use self::elefren::{Data, MastodonClient};
 
 use std::{
     error::Error,
@@ -7,7 +9,7 @@ use std::{
     io,
 };
 
-use self::mammut::{
+use self::elefren::{
     apps::{
         AppBuilder,
         Scopes
@@ -26,7 +28,8 @@ fn main() -> Result<(), Box<Error>> {
 #[allow(dead_code)]
 pub fn get_mastodon_data() -> Result<Mastodon, Box<Error>> {
     if let Ok(config) = fs::read_to_string("mastodon-data.toml") {
-        Ok(Mastodon::from_data(toml::from_str(&config)?))
+        let data: Data = toml::from_str(&config)?;
+        Ok(Mastodon::from(data))
     } else {
         register()
     }
@@ -34,10 +37,10 @@ pub fn get_mastodon_data() -> Result<Mastodon, Box<Error>> {
 
 pub fn register() -> Result<Mastodon, Box<Error>> {
     let app = AppBuilder {
-        client_name: "mammut-examples",
+        client_name: "elefren-examples",
         redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
         scopes: Scopes::All,
-        website: Some("https://github.com/Aaronepower/mammut"),
+        website: Some("https://github.com/pwoolcoc/elefren"),
     };
 
     let website = read_line("Please enter your mastodon instance url:")?;
