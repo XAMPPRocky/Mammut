@@ -196,14 +196,9 @@ impl Mastodon {
 impl From<Data> for Mastodon {
     /// Creates a mastodon instance from the data struct.
     fn from(data: Data) -> Mastodon {
-        let mut headers = Headers::new();
-        headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
-
-        Mastodon {
-            client: Client::new(),
-            headers: headers,
-            data: data,
-        }
+        let mut builder = MastodonBuilder::new();
+        builder.data(data);
+        builder.build().expect("We know `data` is present, so this should be fine")
     }
 }
 
@@ -430,6 +425,44 @@ impl ops::Deref for Mastodon {
     }
 }
 
+struct MastodonBuilder {
+    client: Option<Client>,
+    data: Option<Data>,
+}
+
+impl MastodonBuilder {
+    pub fn new() -> Self {
+        MastodonBuilder {
+            client: None,
+            data: None,
+        }
+    }
+
+    pub fn client(&mut self, client: Client) -> &mut Self {
+        self.client = Some(client);
+        self
+    }
+
+    pub fn data(&mut self, data: Data) -> &mut Self {
+        self.data = Some(data);
+        self
+    }
+
+    pub fn build(self) -> Result<Mastodon> {
+        Ok(if let Some(data) = self.data {
+            let mut headers = Headers::new();
+            headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
+
+            Mastodon {
+                client: self.client.unwrap_or_else(|| Client::new()),
+                headers: headers,
+                data: data,
+            }
+        } else {
+            return Err(Error::DataMissing);
+        })
+    }
+}
 
 // Convert the HTTP response body from JSON. Pass up deserialization errors
 // transparently.
