@@ -587,16 +587,42 @@ impl Mastodon {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// # extern crate mammut;
+    /// # use mammut::{Data, Mastodon};
+    /// # use std::error::Error;
+    /// # fn main() -> Result<(), Box<Error>> {
+    /// # let data = Data {
+    /// #   base: "".into(),
+    /// #   client_id: "".into(),
+    /// #   client_secret: "".into(),
+    /// #   redirect: "".into(),
+    /// #   token: "".into(),
+    /// # };
     /// let client = Mastodon::from_data(data);
     /// let statuses = client.statuses("user-id", None)?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
-    /// ```ignore
+    /// ```no_run
+    /// # extern crate mammut;
+    /// # use mammut::{Data, Mastodon, StatusesRequest};
+    /// # use std::error::Error;
+    /// # fn main() -> Result<(), Box<Error>> {
+    /// # let data = Data {
+    /// #   base: "".into(),
+    /// #   client_id: "".into(),
+    /// #   client_secret: "".into(),
+    /// #   redirect: "".into(),
+    /// #   token: "".into(),
+    /// # };
     /// let client = Mastodon::from_data(data);
     /// let request = StatusesRequest::default()
     ///                               .only_media();
     /// let statuses = client.statuses("user-id", request)?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn statuses<'a, S>(&self, id: &str, request: S) -> Result<Page<Status>>
             where S: Into<Option<StatusesRequest<'a>>>
