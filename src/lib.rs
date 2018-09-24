@@ -38,6 +38,7 @@
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate doc_comment;
 #[macro_use] extern crate serde_json as json;
+extern crate hyperx;
 extern crate chrono;
 extern crate reqwest;
 extern crate serde;
@@ -63,7 +64,7 @@ use std::ops;
 use json::Error as SerdeError;
 use reqwest::Error as HttpError;
 use reqwest::{Client, Response, StatusCode};
-use reqwest::header::{Authorization, Bearer, Headers};
+use reqwest::header::{HeaderMap, HeaderValue};
 use url::ParseError as UrlError;
 
 use entities::prelude::*;
@@ -249,7 +250,7 @@ macro_rules! paged_routes_with_id {
 #[derive(Clone, Debug)]
 pub struct Mastodon {
     client: Client,
-    headers: Headers,
+    headers: HeaderMap,
     /// Raw data about your mastodon instance.
     pub data: Data
 }
@@ -454,8 +455,9 @@ impl Mastodon {
 
             };
 
-            let mut headers = Headers::new();
-            headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
+            let mut headers = HeaderMap::new();
+            let auth = HeaderValue::from_str(&format!("Bearer {}", data.token));
+            headers.insert(reqwest::header::AUTHORIZATION, auth.unwrap());
 
             Mastodon {
                 client: client,
@@ -466,8 +468,9 @@ impl Mastodon {
 
     /// Creates a mastodon instance from the data struct.
     pub fn from_data(data: Data) -> Self {
-        let mut headers = Headers::new();
-        headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
+        let mut headers = HeaderMap::new();
+        let auth = HeaderValue::from_str(&format!("Bearer {}", data.token));
+        headers.insert(reqwest::header::AUTHORIZATION, auth.unwrap());
 
         Mastodon {
             client: Client::new(),

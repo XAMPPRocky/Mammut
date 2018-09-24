@@ -1,6 +1,7 @@
-use super::{Mastodon, Result, deserialise};
+use super::{std, Mastodon, Result, deserialise};
 use reqwest::Response;
-use reqwest::header::{Link, RelationType};
+use reqwest::header::LINK;
+use hyperx::header::{Header, Link, RelationType};
 use serde::Deserialize;
 use url::Url;
 use entities::itemsiter::ItemsIter;
@@ -96,19 +97,22 @@ fn get_links(response: &Response) -> Result<(Option<Url>, Option<Url>)> {
     let mut prev = None;
     let mut next = None;
 
-    if let Some(link_header) = response.headers().get::<Link>() {
-        for value in link_header.values() {
-            if let Some(relations) = value.rel() {
+    let link_header = response.headers().get_all(LINK);
+    for value in &link_header {
+        let val = value.to_str().unwrap();
+        let raw = std::convert::From::from(val);
+        let parsed: Link = Header::parse_header(&raw).unwrap();
+        for link_value in parsed.values() {
+            if let Some(relations) = link_value.rel() {
                 if relations.contains(&RelationType::Next) {
-                    next = Some(Url::parse(value.link())?);
+                    next = Some(Url::parse(link_value.link())?);
                 }
 
                 if relations.contains(&RelationType::Prev) {
-                    prev = Some(Url::parse(value.link())?);
+                    prev = Some(Url::parse(link_value.link())?);
                 }
             }
         }
     }
-
     Ok((prev, next))
 }
