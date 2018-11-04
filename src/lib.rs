@@ -39,6 +39,7 @@
 #[macro_use] extern crate doc_comment;
 #[macro_use] extern crate serde_json as json;
 extern crate chrono;
+extern crate regex;
 extern crate reqwest;
 extern crate serde;
 extern crate url;
@@ -63,7 +64,7 @@ use std::ops;
 use json::Error as SerdeError;
 use reqwest::Error as HttpError;
 use reqwest::{Client, Response, StatusCode};
-use reqwest::header::{Authorization, Bearer, Headers};
+use reqwest::header::{AUTHORIZATION, HeaderMap, ToStrError};
 use url::ParseError as UrlError;
 
 use entities::prelude::*;
@@ -249,7 +250,7 @@ macro_rules! paged_routes_with_id {
 #[derive(Clone, Debug)]
 pub struct Mastodon {
     client: Client,
-    headers: Headers,
+    headers: HeaderMap,
     /// Raw data about your mastodon instance.
     pub data: Data
 }
@@ -290,6 +291,9 @@ pub enum Error {
     /// Wrapper around the `url::ParseError` struct.
     #[serde(skip_deserializing)]
     Url(UrlError),
+    /// Wrapper around the `reqest::header::ToStrError` struct.
+    #[serde(skip_deserializing)]
+    Link(ToStrError),
     /// Missing Client Id.
     #[serde(skip_deserializing)]
     ClientIdRequired,
@@ -325,6 +329,7 @@ impl StdError for Error {
             Error::Http(ref e) => e.description(),
             Error::Io(ref e) => e.description(),
             Error::Url(ref e) => e.description(),
+            Error::Link(ref e) => e.description(),
             Error::Client(ref status) | Error::Server(ref status) => {
                 status.canonical_reason().unwrap_or("Unknown Status code")
             },
@@ -454,8 +459,8 @@ impl Mastodon {
 
             };
 
-            let mut headers = Headers::new();
-            headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
+            let mut headers = HeaderMap::new();
+            headers.insert(AUTHORIZATION, format!("Bearer {}", data.token).parse().unwrap());
 
             Mastodon {
                 client: client,
@@ -466,8 +471,8 @@ impl Mastodon {
 
     /// Creates a mastodon instance from the data struct.
     pub fn from_data(data: Data) -> Self {
-        let mut headers = Headers::new();
-        headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
+        let mut headers = HeaderMap::new();
+        headers.insert(AUTHORIZATION, format!("Bearer {}", data.token).parse().unwrap());
 
         Mastodon {
             client: Client::new(),
@@ -723,6 +728,7 @@ from! {
     IoError, Io,
     SerdeError, Serde,
     UrlError, Url,
+    ToStrError, Link,
 }
 
 // Convert the HTTP response body from JSON. Pass up deserialization errors

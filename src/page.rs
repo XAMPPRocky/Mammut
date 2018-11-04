@@ -1,6 +1,7 @@
 use super::{Mastodon, Result, deserialise};
+use regex::Regex;
 use reqwest::Response;
-use reqwest::header::{Link, RelationType};
+use reqwest::header::{LINK};
 use serde::Deserialize;
 use url::Url;
 use entities::itemsiter::ItemsIter;
@@ -96,19 +97,41 @@ fn get_links(response: &Response) -> Result<(Option<Url>, Option<Url>)> {
     let mut prev = None;
     let mut next = None;
 
-    if let Some(link_header) = response.headers().get::<Link>() {
-        for value in link_header.values() {
-            if let Some(relations) = value.rel() {
-                if relations.contains(&RelationType::Next) {
-                    next = Some(Url::parse(value.link())?);
-                }
-
-                if relations.contains(&RelationType::Prev) {
-                    prev = Some(Url::parse(value.link())?);
-                }
-            }
+    // @todo Remove the hackish regexes once the reqwest library supports typed
+    // headers again.
+    if let Some(link_header) = response.headers().get(LINK) {
+        let header_string = link_header.to_str()?;
+        let regex = Regex::new("<([^>]+)>; rel=\"prev\"").unwrap();
+        if let Some(captures) = regex.captures(header_string) {
+            // The unwrap() is ok here because we know that if we have a match
+            // then capture 1 must be filled.
+            prev = Some(Url::parse(captures.get(1).unwrap().as_str())?);
+        }
+        let regex = Regex::new("<([^>]+)>; rel=\"next\"").unwrap();
+        if let Some(captures) = regex.captures(header_string) {
+            // The unwrap() is ok here because we know that if we have a match
+            // then capture 1 must be filled.
+            next = Some(Url::parse(captures.get(1).unwrap().as_str())?);
         }
     }
 
     Ok((prev, next))
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate http;
+    use self::http::Response;
+    use reqwest::header::{LINK};
+    use page::get_links;
+    use url::Url;
+
+    #[test]
+    fn get_prev_next() {
+        let mut response = Response::builder();
+        response.header(LINK, "<https://example.com/api/v1/accounts/1234/statuses?exclude_replies=1&max_id=100912162655190397>; rel=\"next\", <https://example.com/api/v1/accounts/1234/statuses?exclude_replies=1&min_id=101008854461266530>; rel=\"prev\"");
+        let links = get_links(&response.body("").unwrap().into()).unwrap();
+        assert_eq!(links.0, Some(Url::parse("https://example.com/api/v1/accounts/1234/statuses?exclude_replies=1&min_id=101008854461266530").unwrap()));
+        assert_eq!(links.1, Some(Url::parse("https://example.com/api/v1/accounts/1234/statuses?exclude_replies=1&max_id=100912162655190397").unwrap()));
+    }
 }
