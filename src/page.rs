@@ -99,20 +99,20 @@ fn get_links(response: &Response) -> Result<(Option<Url>, Option<Url>)> {
 
     let link_header = response.headers().get_all(LINK);
     for value in &link_header {
-        let val = value.to_str().unwrap();
-        let raw = std::convert::From::from(val);
-        let parsed: Link = Header::parse_header(&raw).unwrap();
-        for link_value in parsed.values() {
-            if let Some(relations) = link_value.rel() {
+        let val = std::convert::From::from(value.to_str().unwrap());
+        let parsed: Link = Header::parse_header(&val).unwrap();
+        for value in parsed.values() {
+            if let Some(relations) = value.rel() {
                 if relations.contains(&RelationType::Next) {
-                    next = Some(Url::parse(link_value.link())?);
+                    next = Some(Url::parse(value.link())?);
                 }
 
                 if relations.contains(&RelationType::Prev) {
-                    prev = Some(Url::parse(link_value.link())?);
+                    prev = Some(Url::parse(value.link())?);
                 }
             }
         }
     }
+
     Ok((prev, next))
 }

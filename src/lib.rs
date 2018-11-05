@@ -64,7 +64,7 @@ use std::ops;
 use json::Error as SerdeError;
 use reqwest::Error as HttpError;
 use reqwest::{Client, Response, StatusCode};
-use reqwest::header::{HeaderMap, HeaderValue};
+use reqwest::header::{self, HeaderMap, HeaderValue};
 use url::ParseError as UrlError;
 
 use entities::prelude::*;
@@ -457,7 +457,7 @@ impl Mastodon {
 
             let mut headers = HeaderMap::new();
             let auth = HeaderValue::from_str(&format!("Bearer {}", data.token));
-            headers.insert(reqwest::header::AUTHORIZATION, auth.unwrap());
+            headers.insert(header::AUTHORIZATION, auth.unwrap());
 
             Mastodon {
                 client: client,
@@ -470,7 +470,7 @@ impl Mastodon {
     pub fn from_data(data: Data) -> Self {
         let mut headers = HeaderMap::new();
         let auth = HeaderValue::from_str(&format!("Bearer {}", data.token));
-        headers.insert(reqwest::header::AUTHORIZATION, auth.unwrap());
+        headers.insert(header::AUTHORIZATION, auth.unwrap());
 
         Mastodon {
             client: Client::new(),
