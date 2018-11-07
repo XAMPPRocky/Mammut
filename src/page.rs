@@ -1,4 +1,4 @@
-use super::{std, Mastodon, Result, deserialise};
+use super::{Mastodon, Result, deserialise};
 use reqwest::Response;
 use reqwest::header::LINK;
 use hyperx::header::{Header, Link, RelationType};
@@ -99,7 +99,7 @@ fn get_links(response: &Response) -> Result<(Option<Url>, Option<Url>)> {
 
     let link_header = response.headers().get_all(LINK);
     for value in &link_header {
-        let val = std::convert::From::from(value.to_str()?);
+        let val = value.to_str()?.into();
         let parsed: Link = Header::parse_header(&val)?;
         for value in parsed.values() {
             if let Some(relations) = value.rel() {
