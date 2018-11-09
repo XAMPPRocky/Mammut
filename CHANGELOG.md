@@ -1,3 +1,11 @@
+# 0.12
+ - Added the `StatusesRequest` struct.
+ - `Mastodon::statuses` now takes an id and a `StatusesRequest`
+ - Documentation should be properly formatted.
+ - Added the Page iterator.
+ - Updated reqwest to 0.9
+ - Fixed various codegen bugs.
+
 # 0.11
 - Added more examples to `examples` directory.
 - Fixed `follow` and `unfollow` routes.
