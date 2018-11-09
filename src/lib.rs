@@ -38,6 +38,7 @@
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate doc_comment;
 #[macro_use] extern crate serde_json as json;
+extern crate hyperx;
 extern crate chrono;
 extern crate reqwest;
 extern crate serde;
@@ -62,9 +63,11 @@ use std::ops;
 
 use json::Error as SerdeError;
 use reqwest::Error as HttpError;
+use reqwest::header::ToStrError as HeaderToStrError;
 use reqwest::{Client, Response, StatusCode};
-use reqwest::header::{Authorization, Bearer, Headers};
+use reqwest::header::{self, HeaderMap, HeaderValue};
 use url::ParseError as UrlError;
+use hyperx::Error as HyperxError;
 
 use entities::prelude::*;
 pub use status_builder::StatusBuilder;
@@ -249,7 +252,7 @@ macro_rules! paged_routes_with_id {
 #[derive(Clone, Debug)]
 pub struct Mastodon {
     client: Client,
-    headers: Headers,
+    headers: HeaderMap,
     /// Raw data about your mastodon instance.
     pub data: Data
 }
@@ -305,6 +308,12 @@ pub enum Error {
     /// Generic server error.
     #[serde(skip_deserializing)]
     Server(StatusCode),
+    /// A possible error when converting a HeaderValue to a string representation.
+    #[serde(skip_deserializing)]
+    Header(HeaderToStrError),
+    /// Errors while parsing headers and associated types.
+    #[serde(skip_deserializing)]
+    Hyperx(HyperxError),
 }
 
 impl fmt::Display for Error {
@@ -328,10 +337,24 @@ impl StdError for Error {
             Error::Client(ref status) | Error::Server(ref status) => {
                 status.canonical_reason().unwrap_or("Unknown Status code")
             },
+            Error::Hyperx(ref e) => e.description(),
+            Error::Header(ref e) => e.description(),
             Error::ClientIdRequired => "ClientIdRequired",
             Error::ClientSecretRequired => "ClientSecretRequired",
             Error::AccessTokenRequired => "AccessTokenRequired",
         }
+    }
+}
+
+impl From<HyperxError> for Error {
+    fn from(error: HyperxError) -> Self {
+        Error::Hyperx(error)
+    }
+}
+
+impl From<HeaderToStrError> for Error {
+    fn from(error: HeaderToStrError) -> Self {
+        Error::Header(error)
     }
 }
 
@@ -454,8 +477,9 @@ impl Mastodon {
 
             };
 
-            let mut headers = Headers::new();
-            headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
+            let mut headers = HeaderMap::new();
+            let auth = HeaderValue::from_str(&format!("Bearer {}", data.token));
+            headers.insert(header::AUTHORIZATION, auth.unwrap());
 
             Mastodon {
                 client: client,
@@ -466,8 +490,9 @@ impl Mastodon {
 
     /// Creates a mastodon instance from the data struct.
     pub fn from_data(data: Data) -> Self {
-        let mut headers = Headers::new();
-        headers.set(Authorization(Bearer { token: (*data.token).to_owned() }));
+        let mut headers = HeaderMap::new();
+        let auth = HeaderValue::from_str(&format!("Bearer {}", data.token));
+        headers.insert(header::AUTHORIZATION, auth.unwrap());
 
         Mastodon {
             client: Client::new(),
