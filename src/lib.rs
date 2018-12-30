@@ -215,7 +215,7 @@ macro_rules! route_id {
                     "Equivalent to `/api/v1/",
                     $url,
                     "`\n# Errors\nIf `access_token` is not set."),
-                pub fn $name(&self, id: u64) -> Result<$ret> {
+                pub fn $name(&self, id: &str) -> Result<$ret> {
                     self.$method(self.route(&format!(concat!("/api/v1/", $url), id)))
                 }
             }
