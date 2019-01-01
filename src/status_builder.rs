@@ -3,12 +3,13 @@
 pub struct StatusBuilder {
     /// The text of the status.
     pub status: String,
-    /// Ids of accounts being replied to.
+    /// The ID of the status this status is replying to, if the status is
+    /// a reply.
     #[serde(skip_serializing_if="Option::is_none")]
-    pub in_reply_to_id: Option<u64>,
+    pub in_reply_to_id: Option<String>,
     /// Ids of media attachments being attached to the status.
     #[serde(skip_serializing_if="Option::is_none")]
-    pub media_ids: Option<Vec<u64>>,
+    pub media_ids: Option<Vec<String>>,
     /// Whether current status is sensitive.
     #[serde(skip_serializing_if="Option::is_none")]
     pub sensitive: Option<bool>,
