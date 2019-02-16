@@ -720,6 +720,30 @@ impl Mastodon {
         s += url;
         s
     }
+
+    /// Equivalent to /api/v1/media with a media description text
+    pub fn media_description(&self, file: Cow<'static, str>, description: Cow<'static, str>) -> Result<Attachment> {
+        use reqwest::multipart::Form;
+
+        let form_data = Form::new()
+            .file(stringify!(file), file.as_ref())?
+            .text("description", description);
+
+        let response = self.client.post(&self.route("/api/v1/media"))
+            .headers(self.headers.clone())
+            .multipart(form_data)
+            .send()?;
+
+        let status = response.status().clone();
+
+        if status.is_client_error() {
+            return Err(Error::Client(status));
+        } else if status.is_server_error() {
+            return Err(Error::Server(status));
+        }
+
+        deserialise(response)
+    }
 }
 
 impl ops::Deref for Mastodon {
