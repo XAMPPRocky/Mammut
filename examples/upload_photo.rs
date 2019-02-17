@@ -4,9 +4,10 @@ use std::error;
 
 fn main() -> Result<(), Box<error::Error>> {
     let mastodon = register::get_mastodon_data()?;
-    let input = register::read_line("Enter the path to the photo you'd like to post: ")?;
+    let file_name = register::read_line("Enter the path to the photo you'd like to post: ")?;
+    let alt_text = register::read_line("Enter the description text for the photo: ")?;
 
-    mastodon.media(input.into())?;
+    mastodon.media(file_name.into(), Some(alt_text.into()), None)?;
 
     Ok(())
 }

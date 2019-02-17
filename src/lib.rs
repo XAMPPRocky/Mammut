@@ -120,40 +120,6 @@ macro_rules! paged_routes {
 
 macro_rules! route {
 
-    ((post multipart ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        doc_comment! {
-            concat!(
-                "Equivalent to `/api/v1/",
-                $url,
-                "`\n# Errors\nIf `access_token` is not set."),
-            pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
-                use reqwest::multipart::Form;
-
-                let form_data = Form::new()
-                    $(
-                        .file(stringify!($param), $param.as_ref())?
-                     )*;
-
-                let response = self.client.post(&self.route(concat!("/api/v1/", $url)))
-                    .headers(self.headers.clone())
-                    .multipart(form_data)
-                    .send()?;
-
-                let status = response.status().clone();
-
-                if status.is_client_error() {
-                    return Err(Error::Client(status));
-                } else if status.is_server_error() {
-                    return Err(Error::Server(status));
-                }
-
-                deserialise(response)
-            }
-        }
-
-        route!{$($rest)*}
-    };
-
     (($method:ident ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
         doc_comment! {
             concat!(
@@ -530,7 +496,6 @@ impl Mastodon {
         (post (id: &str,)) reject_follow_request: "accounts/follow_requests/reject" => Empty,
         (post (q: String, resolve: bool,)) search: "search" => SearchResult,
         (post (uri: Cow<'static, str>,)) follows: "follows" => Account,
-        (post multipart (file: Cow<'static, str>,)) media: "media" => Attachment,
         (post) clear_notifications: "notifications/clear" => Empty,
     }
 
@@ -721,13 +686,26 @@ impl Mastodon {
         s
     }
 
-    /// Equivalent to /api/v1/media with a media description text
-    pub fn media_description(&self, file: Cow<'static, str>, description: Cow<'static, str>) -> Result<Attachment> {
+    /// Equivalent to /api/v1/media
+    pub fn media(&self,
+                 file: Cow<'static, str>,
+                 description: Option<Cow<'static, str>>,
+                 focus: Option<(f32, f32)>)
+        -> Result<Attachment>
+    {
         use reqwest::multipart::Form;
 
-        let form_data = Form::new()
-            .file(stringify!(file), file.as_ref())?
-            .text("description", description);
+        let mut form_data = Form::new()
+            .file(stringify!(file), file.as_ref())?;
+
+        if let Some(description) = description {
+            form_data = form_data.text("description", description);
+        }
+
+        if let Some(focus) = focus {
+            let string = format!("{},{}", focus.0, focus.1);
+            form_data = form_data.text("focus", string);
+        }
 
         let response = self.client.post(&self.route("/api/v1/media"))
             .headers(self.headers.clone())
