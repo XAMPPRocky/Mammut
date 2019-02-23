@@ -54,6 +54,8 @@ pub mod entities;
 pub mod registration;
 /// Handling multiple pages of entities.
 pub mod page;
+/// Constructing media attachments for a status.
+pub mod media_builder;
 
 use std::borrow::Cow;
 use std::error::Error as StdError;
@@ -72,6 +74,7 @@ use hyperx::Error as HyperxError;
 use entities::prelude::*;
 pub use status_builder::StatusBuilder;
 use page::Page;
+pub use media_builder::MediaBuilder;
 
 pub use registration::Registration;
 /// Convience type over `std::result::Result` with `Error` as the error type.
@@ -687,22 +690,19 @@ impl Mastodon {
     }
 
     /// Equivalent to /api/v1/media
-    pub fn media(&self,
-                 file: Cow<'static, str>,
-                 description: Option<Cow<'static, str>>,
-                 focus: Option<(f32, f32)>)
+    pub fn media(&self, media_builder: MediaBuilder)
         -> Result<Attachment>
     {
         use reqwest::multipart::Form;
 
         let mut form_data = Form::new()
-            .file(stringify!(file), file.as_ref())?;
+            .file(stringify!(media_builder.file), media_builder.file.as_ref())?;
 
-        if let Some(description) = description {
+        if let Some(description) = media_builder.description {
             form_data = form_data.text("description", description);
         }
 
-        if let Some(focus) = focus {
+        if let Some(focus) = media_builder.focus {
             let string = format!("{},{}", focus.0, focus.1);
             form_data = form_data.text("focus", string);
         }
