@@ -690,8 +690,7 @@ impl Mastodon {
     }
 
     /// Equivalent to /api/v1/media
-    pub fn media(&self, media_builder: MediaBuilder)
-        -> Result<Attachment>
+    pub fn media(&self, media_builder: MediaBuilder) -> Result<Attachment>
     {
         use reqwest::multipart::Form;
 

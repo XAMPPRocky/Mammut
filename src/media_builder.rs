@@ -34,6 +34,32 @@ impl MediaBuilder {
     }
 }
 
+// Convenience helper so that the mastodon.media() method can be called with a
+// file name only (owned string).
+impl From<String> for MediaBuilder {
+    fn from(file: String) -> MediaBuilder {
+        MediaBuilder {
+            file: file.into(),
+            description: None,
+            focus: None,
+        }
+    }
+}
+
+// Convenience helper so that the mastodon.media() method can be called with a
+// file name only (borrowed string).
+impl From<&'static str> for MediaBuilder {
+    fn from(file: &'static str) -> MediaBuilder {
+        MediaBuilder {
+            file: file.into(),
+            description: None,
+            focus: None,
+        }
+    }
+}
+
+// Convenience helper so that the mastodon.media() method can be called with a
+// file name only (Cow string).
 impl From<Cow<'static, str>> for MediaBuilder {
     fn from(file: Cow<'static, str>) -> MediaBuilder {
         MediaBuilder {
