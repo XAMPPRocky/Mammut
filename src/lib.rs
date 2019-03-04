@@ -54,6 +54,8 @@ pub mod entities;
 pub mod registration;
 /// Handling multiple pages of entities.
 pub mod page;
+/// Constructing media attachments for a status.
+pub mod media_builder;
 
 use std::borrow::Cow;
 use std::error::Error as StdError;
@@ -72,6 +74,7 @@ use hyperx::Error as HyperxError;
 use entities::prelude::*;
 pub use status_builder::StatusBuilder;
 use page::Page;
+pub use media_builder::MediaBuilder;
 
 pub use registration::Registration;
 /// Convience type over `std::result::Result` with `Error` as the error type.
@@ -119,40 +122,6 @@ macro_rules! paged_routes {
 }
 
 macro_rules! route {
-
-    ((post multipart ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
-        doc_comment! {
-            concat!(
-                "Equivalent to `/api/v1/",
-                $url,
-                "`\n# Errors\nIf `access_token` is not set."),
-            pub fn $name(&self, $($param: $typ,)*) -> Result<$ret> {
-                use reqwest::multipart::Form;
-
-                let form_data = Form::new()
-                    $(
-                        .file(stringify!($param), $param.as_ref())?
-                     )*;
-
-                let response = self.client.post(&self.route(concat!("/api/v1/", $url)))
-                    .headers(self.headers.clone())
-                    .multipart(form_data)
-                    .send()?;
-
-                let status = response.status().clone();
-
-                if status.is_client_error() {
-                    return Err(Error::Client(status));
-                } else if status.is_server_error() {
-                    return Err(Error::Server(status));
-                }
-
-                deserialise(response)
-            }
-        }
-
-        route!{$($rest)*}
-    };
 
     (($method:ident ($($param:ident: $typ:ty,)*)) $name:ident: $url:expr => $ret:ty, $($rest:tt)*) => {
         doc_comment! {
@@ -530,7 +499,6 @@ impl Mastodon {
         (post (id: &str,)) reject_follow_request: "accounts/follow_requests/reject" => Empty,
         (post (q: String, resolve: bool,)) search: "search" => SearchResult,
         (post (uri: Cow<'static, str>,)) follows: "follows" => Account,
-        (post multipart (file: Cow<'static, str>,)) media: "media" => Attachment,
         (post) clear_notifications: "notifications/clear" => Empty,
     }
 
@@ -719,6 +687,39 @@ impl Mastodon {
         let mut s = (*self.base).to_owned();
         s += url;
         s
+    }
+
+    /// Equivalent to /api/v1/media
+    pub fn media(&self, media_builder: MediaBuilder) -> Result<Attachment>
+    {
+        use reqwest::multipart::Form;
+
+        let mut form_data = Form::new()
+            .file(stringify!(media_builder.file), media_builder.file.as_ref())?;
+
+        if let Some(description) = media_builder.description {
+            form_data = form_data.text("description", description);
+        }
+
+        if let Some(focus) = media_builder.focus {
+            let string = format!("{},{}", focus.0, focus.1);
+            form_data = form_data.text("focus", string);
+        }
+
+        let response = self.client.post(&self.route("/api/v1/media"))
+            .headers(self.headers.clone())
+            .multipart(form_data)
+            .send()?;
+
+        let status = response.status().clone();
+
+        if status.is_client_error() {
+            return Err(Error::Client(status));
+        } else if status.is_server_error() {
+            return Err(Error::Server(status));
+        }
+
+        deserialise(response)
     }
 }
 
