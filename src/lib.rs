@@ -62,6 +62,7 @@ use reqwest::{Client, Response, StatusCode};
 use reqwest::header::{self, HeaderMap, HeaderValue};
 use url::ParseError as UrlError;
 use hyperx::Error as HyperxError;
+use log::debug;
 
 use entities::prelude::*;
 pub use status_builder::StatusBuilder;
@@ -78,9 +79,12 @@ macro_rules! methods {
             fn $method<T: for<'de> serde::Deserialize<'de>>(&self, url: String)
             -> Result<T>
             {
-                let response = self.client.$method(&url)
-                    .headers(self.headers.clone())
-                    .send()?;
+                let request = self.client.$method(&url)
+                    .headers(self.headers.clone());
+                debug!("REQUEST: {:?}", request);
+
+                let response = request.send()?;
+                debug!("RESPONSE: {:?}", response);
 
                 deserialise(response)
             }
