@@ -5,10 +5,7 @@
 //!
 //! ```no_run
 //! # extern crate mammut;
-//! # fn main() {
-//! #    try().unwrap();
-//! # }
-//! # fn try() -> mammut::Result<()> {
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use mammut::Registration;
 //! use mammut::apps::{AppBuilder, Scopes};
 //!
@@ -38,11 +35,6 @@
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate doc_comment;
 #[macro_use] extern crate serde_json as json;
-extern crate hyperx;
-extern crate chrono;
-extern crate reqwest;
-extern crate serde;
-extern crate url;
 
 /// Registering your App
 pub mod apps;

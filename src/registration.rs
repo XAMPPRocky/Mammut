@@ -1,7 +1,7 @@
 use reqwest::Client;
 
 use super::{Error, Mastodon, Result};
-use apps::{AppBuilder, Scopes};
+use crate::apps::{AppBuilder, Scopes};
 
 /// Handles registering your mastodon app to your instance. It is recommended
 /// you cache your data struct to avoid registering on every run.
@@ -48,10 +48,7 @@ impl Registration {
     ///
     /// ```no_run
     /// # extern crate mammut;
-    /// # fn main() {
-    /// #    try().unwrap();
-    /// # }
-    /// # fn try() -> mammut::Result<()> {
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use mammut::Registration;
     /// use mammut::apps::{AppBuilder, Scopes};
     ///

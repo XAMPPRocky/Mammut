@@ -2,7 +2,7 @@
 
 use chrono::prelude::*;
 use super::prelude::*;
-use status_builder::Visibility;
+use crate::status_builder::Visibility;
 
 /// A status from the instance.
 #[derive(Debug, Clone, Deserialize)]

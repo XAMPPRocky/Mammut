@@ -1,5 +1,6 @@
-use page::Page;
 use serde::Deserialize;
+
+use crate::page::Page;
 
 /// Abstracts away the `next_page` logic into a single stream of items
 ///

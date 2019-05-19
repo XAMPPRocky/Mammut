@@ -1,9 +1,11 @@
 //! A module containing everything relating to a account returned from the api.
 
+use std::path::Path;
+
 use chrono::prelude::*;
 use reqwest::multipart::Form;
-use ::Result;
-use std::path::Path;
+
+use crate::Result;
 
 /// A struct representing an Account.
 #[derive(Debug, Clone, Deserialize)]
@@ -50,7 +52,7 @@ pub struct Account {
 /// An extra object given from `verify_credentials` giving defaults about a user
 #[derive(Debug, Clone, Deserialize)]
 pub struct Source {
-    privacy: ::status_builder::Visibility,
+    privacy: crate::status_builder::Visibility,
     sensitive: bool,
     note: String,
 }
