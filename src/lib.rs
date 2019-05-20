@@ -691,7 +691,7 @@ impl Mastodon {
         use reqwest::multipart::Form;
 
         let mut form_data = Form::new()
-            .file(stringify!(media_builder.file), media_builder.file.as_ref())?;
+            .file("file", media_builder.file.as_ref())?;
 
         if let Some(description) = media_builder.description {
             form_data = form_data.text("description", description);
