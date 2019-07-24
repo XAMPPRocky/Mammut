@@ -6,7 +6,7 @@
 
 ## [Documentation](https://docs.rs/mammut/)
 
-A wrapper around the [API](https://github.com/tootsuite/mastodon/blob/master/docs/Using-the-API/API.md#tag) for [Mastodon](https://mastodon.social/)
+A wrapper around the [API](https://docs.joinmastodon.org/api/) for [Mastodon](https://mastodon.social/)
 
 ```rust
 extern crate mammut;
