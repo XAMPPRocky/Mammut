@@ -12,9 +12,9 @@ keywords = ["api", "web", "social", "mastodon", "wrapper"]
 categories = ["web-programming", "http-client"]
 
 [dependencies]
-doc-comment = "0.1"
+doc-comment = "0.3"
 reqwest = "0.9"
-hyperx = "0.13"
+hyperx = "0.15"
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
@@ -26,4 +26,4 @@ version = "0.4"
 features = ["serde"]
 
 [dev-dependencies]
-toml = "0.4"
+toml = "0.5"
