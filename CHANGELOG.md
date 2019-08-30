@@ -1,3 +1,7 @@
+# 0.13
+- Added `media` endpoint and `MediaBuilder` to enable media uploads. By @klausi
+- Changed `StatusBuilder`'s ID type to be `String`.
+
 # 0.12
  - Added the `StatusesRequest` struct.
  - `Mastodon::statuses` now takes an id and a `StatusesRequest`
