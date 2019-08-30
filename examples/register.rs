@@ -17,14 +17,14 @@ use self::mammut::{
 };
 
 #[allow(dead_code)]
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     register()?;
     Ok(())
 }
 
 
 #[allow(dead_code)]
-pub fn get_mastodon_data() -> Result<Mastodon, Box<Error>> {
+pub fn get_mastodon_data() -> Result<Mastodon, Box<dyn Error>> {
     if let Ok(config) = fs::read_to_string("mastodon-data.toml") {
         Ok(Mastodon::from_data(toml::from_str(&config)?))
     } else {
@@ -32,7 +32,7 @@ pub fn get_mastodon_data() -> Result<Mastodon, Box<Error>> {
     }
 }
 
-pub fn register() -> Result<Mastodon, Box<Error>> {
+pub fn register() -> Result<Mastodon, Box<dyn Error>> {
     let app = AppBuilder {
         client_name: "mammut-examples",
         redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
@@ -58,7 +58,7 @@ pub fn register() -> Result<Mastodon, Box<Error>> {
     Ok(mastodon)
 }
 
-pub fn read_line(message: &str) -> Result<String, Box<Error>> {
+pub fn read_line(message: &str) -> Result<String, Box<dyn Error>> {
     println!("{}", message);
 
     let mut input = String::new();
