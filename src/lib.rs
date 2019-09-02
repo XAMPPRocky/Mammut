@@ -352,6 +352,7 @@ pub struct StatusesRequest<'a> {
     since_id: Option<Cow<'a, str>>,
     min_id: Option<Cow<'a, str>>,
     limit: Option<usize>,
+    exclude_reblogs: bool,
 }
 
 impl<'a> StatusesRequest<'a> {
@@ -394,6 +395,11 @@ impl<'a> StatusesRequest<'a> {
         self
     }
 
+    pub fn exclude_reblogs(mut self) -> Self {
+        self.exclude_reblogs = true;
+        self
+    }
+
     pub fn to_querystring(&self) -> String {
         let mut opts = vec![];
 
@@ -423,6 +429,10 @@ impl<'a> StatusesRequest<'a> {
 
         if let Some(limit) = self.limit {
             opts.push(format!("limit={}", limit));
+        }
+
+        if self.exclude_reblogs {
+            opts.push("exclude_reblogs=1".into());
         }
 
         if opts.is_empty() {
