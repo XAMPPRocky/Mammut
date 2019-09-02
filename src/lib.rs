@@ -350,6 +350,7 @@ pub struct StatusesRequest<'a> {
     pinned: bool,
     max_id: Option<Cow<'a, str>>,
     since_id: Option<Cow<'a, str>>,
+    min_id: Option<Cow<'a, str>>,
     limit: Option<usize>,
 }
 
@@ -383,6 +384,11 @@ impl<'a> StatusesRequest<'a> {
         self
     }
 
+    pub fn min_id<S: Into<Cow<'a, str>>>(mut self, min_id: S) -> Self {
+        self.min_id = Some(min_id.into());
+        self
+    }
+
     pub fn limit(mut self, limit: usize) -> Self {
         self.limit = Some(limit);
         self
@@ -409,6 +415,10 @@ impl<'a> StatusesRequest<'a> {
 
         if let Some(ref since_id) = self.since_id {
             opts.push(format!("since_id={}", since_id));
+        }
+
+        if let Some(ref min_id) = self.min_id {
+            opts.push(format!("min_id={}", min_id));
         }
 
         if let Some(limit) = self.limit {
