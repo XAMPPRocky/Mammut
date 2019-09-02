@@ -350,7 +350,9 @@ pub struct StatusesRequest<'a> {
     pinned: bool,
     max_id: Option<Cow<'a, str>>,
     since_id: Option<Cow<'a, str>>,
+    min_id: Option<Cow<'a, str>>,
     limit: Option<usize>,
+    exclude_reblogs: bool,
 }
 
 impl<'a> StatusesRequest<'a> {
@@ -383,8 +385,18 @@ impl<'a> StatusesRequest<'a> {
         self
     }
 
+    pub fn min_id<S: Into<Cow<'a, str>>>(mut self, min_id: S) -> Self {
+        self.min_id = Some(min_id.into());
+        self
+    }
+
     pub fn limit(mut self, limit: usize) -> Self {
         self.limit = Some(limit);
+        self
+    }
+
+    pub fn exclude_reblogs(mut self) -> Self {
+        self.exclude_reblogs = true;
         self
     }
 
@@ -411,8 +423,16 @@ impl<'a> StatusesRequest<'a> {
             opts.push(format!("since_id={}", since_id));
         }
 
+        if let Some(ref min_id) = self.min_id {
+            opts.push(format!("min_id={}", min_id));
+        }
+
         if let Some(limit) = self.limit {
             opts.push(format!("limit={}", limit));
+        }
+
+        if self.exclude_reblogs {
+            opts.push("exclude_reblogs=1".into());
         }
 
         if opts.is_empty() {
