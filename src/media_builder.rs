@@ -12,7 +12,6 @@ pub struct MediaBuilder {
 }
 
 impl MediaBuilder {
-
     /// Create a new attachment from a file name.
     pub fn new(file: Cow<'static, str>) -> Self {
         MediaBuilder {

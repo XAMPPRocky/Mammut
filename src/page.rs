@@ -1,11 +1,11 @@
-use reqwest::Response;
-use reqwest::header::LINK;
 use hyperx::header::{Header, Link, RelationType};
+use reqwest::header::LINK;
+use reqwest::Response;
 use serde::Deserialize;
 use url::Url;
 
+use super::{deserialise, Mastodon, Result};
 use crate::entities::itemsiter::ItemsIter;
-use super::{Mastodon, Result, deserialise};
 
 pub struct Page<'a, T: for<'de> Deserialize<'de>> {
     mastodon: &'a Mastodon,
@@ -46,7 +46,7 @@ impl<'a, T: for<'de> Deserialize<'de>> Page<'a, T> {
             initial_items: deserialise(response)?,
             next,
             prev,
-            mastodon
+            mastodon,
         })
     }
 
@@ -88,7 +88,8 @@ impl<'a, T: Clone + for<'de> Deserialize<'de>> Page<'a, T> {
     /// # }
     /// ```
     pub fn items_iter(self) -> impl Iterator<Item = T> + 'a
-            where T: 'a
+    where
+        T: 'a,
     {
         ItemsIter::new(self)
     }

@@ -124,13 +124,13 @@ impl Registration {
 
         let token: AccessToken = self.client.post(&url).send()?.json()?;
 
-        Ok(Mastodon::from_registration(self.base,
-                                       self.client_id.unwrap(),
-                                       self.client_secret.unwrap(),
-                                       self.redirect.unwrap(),
-                                       token.access_token,
-                                       self.client))
+        Ok(Mastodon::from_registration(
+            self.base,
+            self.client_id.unwrap(),
+            self.client_secret.unwrap(),
+            self.redirect.unwrap(),
+            token.access_token,
+            self.client,
+        ))
     }
 }
-
-

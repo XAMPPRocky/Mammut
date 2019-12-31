@@ -1,19 +1,11 @@
 extern crate mammut;
 extern crate toml;
 
-use std::{
-    error::Error,
-    fs,
-    io,
-};
+use std::{error::Error, fs, io};
 
 use self::mammut::{
-    apps::{
-        AppBuilder,
-        Scopes
-    },
-    Mastodon,
-    Registration
+    apps::{AppBuilder, Scopes},
+    Mastodon, Registration,
 };
 
 #[allow(dead_code)]
@@ -21,7 +13,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     register()?;
     Ok(())
 }
-
 
 #[allow(dead_code)]
 pub fn get_mastodon_data() -> Result<Mastodon, Box<dyn Error>> {
@@ -66,4 +57,3 @@ pub fn read_line(message: &str) -> Result<String, Box<dyn Error>> {
 
     Ok(input)
 }
-

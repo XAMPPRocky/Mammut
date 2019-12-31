@@ -1,8 +1,8 @@
 //! Module containing all info relating to a status.
 
-use chrono::prelude::*;
 use super::prelude::*;
 use crate::status_builder::Visibility;
+use chrono::prelude::*;
 
 /// A status from the instance.
 #[derive(Debug, Clone, Deserialize)]

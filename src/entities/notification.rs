@@ -1,8 +1,8 @@
 //! Module containing all info about notifications.
 
-use chrono::prelude::*;
 use super::account::Account;
 use super::status::Status;
+use chrono::prelude::*;
 
 /// A struct containing info about a notification.
 #[derive(Debug, Clone, Deserialize)]
