@@ -79,14 +79,14 @@ pub type Result<T> = std::result::Result<T, Error>;
 macro_rules! methods {
     ($($method:ident,)+) => {
         $(
-            fn $method<T: for<'de> serde::Deserialize<'de>>(&self, url: String)
+            async fn $method<T: for<'de> serde::Deserialize<'de>>(&self, url: String)
             -> Result<T>
             {
                 let request = self.client.$method(&url)
                     .headers(self.headers.clone());
                 debug!("REQUEST: {:?}", request);
 
-                let response = request.send()?;
+                let response = request.send().await?;
                 debug!("RESPONSE: {:?}", response);
 
                 deserialise(response)
@@ -103,11 +103,12 @@ macro_rules! paged_routes {
                 "Equivalent to `/api/v1/",
                 $url,
                 "`\n# Errors\nIf `access_token` is not set."),
-            pub fn $name(&self) -> Result<Page<$ret>> {
+            pub async fn $name(&self) -> Result<Page<$ret>> {
                 let url = self.route(concat!("/api/v1/", $url));
                 let response = self.client.$method(&url)
                     .headers(self.headers.clone())
-                    .send()?;
+                    .send()
+                    .await?;
 
                 Page::new(self, response)
             }
