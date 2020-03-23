@@ -1,5 +1,7 @@
 # Mammut. A API Wrapper for the Mastodon API.
 
+This project is no longer maintained. For a more updated version see [elefren](https://github.com/pwoolcoc/elefren).
+
 [![crates.io](https://img.shields.io/crates/v/mammut.svg)](https://crates.io/crates/mammut)
 [![Docs](https://docs.rs/mammut/badge.svg)](https://docs.rs/mammut)
 [![MIT/APACHE-2.0](https://img.shields.io/crates/l/mammut.svg)](https://crates.io/crates/mammut)
