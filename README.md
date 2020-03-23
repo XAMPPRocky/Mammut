@@ -5,7 +5,7 @@ This project is no longer maintained. For a more updated version see [elefren](h
 [![crates.io](https://img.shields.io/crates/v/mammut.svg)](https://crates.io/crates/mammut)
 [![Docs](https://docs.rs/mammut/badge.svg)](https://docs.rs/mammut)
 [![MIT/APACHE-2.0](https://img.shields.io/crates/l/mammut.svg)](https://crates.io/crates/mammut)
-
+<!--
 ## [Documentation](https://docs.rs/mammut/)
 
 A wrapper around the [API](https://docs.joinmastodon.org/api/) for [Mastodon](https://mastodon.social/)
@@ -66,3 +66,4 @@ fn register() -> Mastodon {
     mastodon
 }
 ```
+-->
