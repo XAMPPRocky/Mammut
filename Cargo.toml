@@ -14,7 +14,7 @@ categories = ["web-programming", "http-client"]
 [dependencies]
 doc-comment = "0.3"
 reqwest = "0.9"
-hyperx = "0.15"
+hyperx = "1.0"
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
